@@ -1,0 +1,39 @@
+# dependencies
+/node_modules
+
+# testing
+/coverage
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
+
+# next.js
+/.next/
+/out/
+/build
+
+# local data (PGlite data directories, uploads)
+/.data/
+
+# eval scratch output (the committed baseline lives in eval/reports/latest.json)
+/eval/reports/*.json
+!/eval/reports/latest.json
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+
+# env files — only the example is committed
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
