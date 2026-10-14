@@ -288,11 +288,12 @@ tests/                    unit/, integration/, e2e/, fixtures/
 
 ## Roadmap
 
+Tracked publicly on the [Roadmap board](https://github.com/users/MatheoTe/projects/1).
+
 - Measure Voyage + Claude on the golden set and publish it next to the offline baseline.
 - A larger, noisier evaluation corpus (hundreds of documents with near-duplicate distractors) so recall@k stops saturating.
 - Move ingestion to a durable queue — the claim/lease protocol already supports multiple workers.
-- Multi-turn conversations with question condensation; per-user workspaces and auth.
-- Sentence-level citation spans: highlight the cited sentence inside the chunk.
+- Per-user workspaces and auth.
 - OCR for scanned PDFs; DOCX and HTML parsers.
 - Redis-backed rate limiter for multi-instance deployments; OpenTelemetry export of traces.
 
