@@ -7,7 +7,8 @@ import { chunks, documents, embeddingCache } from "@/server/db/schema";
 import { UnsupportedFileError } from "@/server/errors";
 import { enqueueDocument, processDocument, processPending, requeueStaleDocuments } from "@/server/ingest/pipeline";
 import { LocalHashEmbeddingProvider } from "@/server/providers/embeddings/local-hash";
-import { deleteDocument } from "@/server/repositories";
+import { getProgress } from "@/server/ingest/progress";
+import { deleteDocument, getCorpusStats } from "@/server/repositories";
 import { CORPUS_DIR, createTestDb, resetDb, testIngestDeps } from "./helpers";
 
 let handle: DbHandle;
@@ -43,6 +44,11 @@ describe("ingestion pipeline", () => {
     const retries = rows.find((r) => r.content.includes("dead-letter queue"));
     expect(retries?.headingPath).toBe("Kestrel Relay API Reference > Delivery and retries");
     expect(rows[0].embedding).toHaveLength(1024);
+
+    expect(getProgress(document.id)).toMatchObject({ stage: "done", chunks: ready!.chunkCount, cacheHits: 0 });
+    expect(Object.keys(getProgress(document.id)!.durations)).toEqual(["parsing", "chunking", "embedding", "indexing"]);
+    expect(await getCorpusStats(handle.db)).toMatchObject({ documents: 1, readyDocuments: 1, chunks: ready!.chunkCount, pages: 0 });
+    expect((await getCorpusStats(handle.db)).lastIndexedAt).toBeInstanceOf(Date);
   });
 
   it("extracts page numbers from PDFs", async () => {

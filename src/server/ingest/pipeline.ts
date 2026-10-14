@@ -5,6 +5,7 @@ import { IngestionError, errorMessage } from "../errors";
 import type { EmbeddingProvider } from "../providers/embeddings/types";
 import { chunkBlocks, embeddingInput } from "./chunker";
 import { detectSourceType, parseDocument, titleFromFilename, type SourceType } from "./parse";
+import { trackStage } from "./progress";
 import { sha256, uuidFromString } from "./text";
 import type { ChunkOptions } from "./types";
 
@@ -119,11 +120,14 @@ export async function processDocument(deps: IngestDeps, documentId: string): Pro
     .returning();
   if (!claimed) return null;
 
+  const progress = trackStage(documentId);
   try {
+    progress.stage("parsing");
     const blob = await db.query.documentBlobs.findFirst({ where: eq(documentBlobs.documentId, documentId) });
     if (!blob) throw new IngestionError("Original upload is missing");
 
     const parsed = await parseDocument(claimed.sourceType, new Uint8Array(blob.data), claimed.filename);
+    progress.stage("chunking");
     const drafts = chunkBlocks(parsed.blocks, chunkOptions);
     if (drafts.length === 0) throw new IngestionError("Document contains no indexable text");
 
@@ -131,7 +135,8 @@ export async function processDocument(deps: IngestDeps, documentId: string): Pro
       const text = embeddingInput(parsed.title, d);
       return { text, hash: sha256(text) };
     });
-    const { vectors } = await embedWithCache(db, embeddings, inputs);
+    progress.stage("embedding");
+    const { vectors, cacheHits } = await embedWithCache(db, embeddings, inputs);
 
     const rows = drafts.map((d, i) => ({
       id: uuidFromString(`${claimed.contentHash}:${d.ordinal}:${inputs[i].hash}:${embeddings.model}`),
@@ -147,6 +152,7 @@ export async function processDocument(deps: IngestDeps, documentId: string): Pro
       embeddingModel: embeddings.model,
     }));
 
+    progress.stage("indexing");
     const [ready] = await db.transaction(async (tx) => {
       await tx.delete(chunks).where(eq(chunks.documentId, documentId));
       for (let i = 0; i < rows.length; i += 100) await tx.insert(chunks).values(rows.slice(i, i + 100));
@@ -165,8 +171,10 @@ export async function processDocument(deps: IngestDeps, documentId: string): Pro
         .where(eq(documents.id, documentId))
         .returning();
     });
+    progress.done({ cacheHits, chunks: rows.length });
     return ready;
   } catch (err) {
+    progress.done();
     const [failed] = await db
       .update(documents)
       .set({ status: "failed", error: errorMessage(err).slice(0, 500), updatedAt: new Date() })

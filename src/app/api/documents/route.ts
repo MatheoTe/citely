@@ -5,6 +5,7 @@ import { PayloadTooLargeError, ValidationError } from "@/server/errors";
 import { withErrors } from "@/server/http/route";
 import { parseOrThrow, uploadSchema } from "@/server/http/schemas";
 import { enqueueDocument, processDocument } from "@/server/ingest/pipeline";
+import { getProgress } from "@/server/ingest/progress";
 import { listDocuments } from "@/server/repositories";
 
 export const maxDuration = 60;
@@ -12,7 +13,8 @@ export const maxDuration = 60;
 export const GET = withErrors(async () => {
   await connection(); // always read the live table, never a build-time snapshot
   const { db } = await getIngestDeps();
-  return Response.json({ documents: await listDocuments(db) });
+  const rows = await listDocuments(db);
+  return Response.json({ documents: rows.map((d) => ({ ...d, progress: getProgress(d.id) })) });
 });
 
 /**

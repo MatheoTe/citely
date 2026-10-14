@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, count, desc, eq, max, sql, sum } from "drizzle-orm";
 import type { Db } from "./db/client";
 import { chunks, documents, traces } from "./db/schema";
 import { NotFoundError } from "./errors";
@@ -80,4 +80,31 @@ export async function getTrace(db: Db, id: string) {
   const [row] = await db.select().from(traces).where(eq(traces.id, id));
   if (!row) throw new NotFoundError("Trace", id);
   return row;
+}
+
+export interface CorpusStats {
+  documents: number;
+  readyDocuments: number;
+  chunks: number;
+  pages: number;
+  lastIndexedAt: Date | null;
+}
+
+export async function getCorpusStats(db: Db): Promise<CorpusStats> {
+  const [row] = await db
+    .select({
+      documents: count(),
+      readyDocuments: count(sql`case when ${documents.status} = 'ready' then 1 end`),
+      chunks: sum(documents.chunkCount),
+      pages: sum(documents.pageCount),
+      lastIndexedAt: max(documents.processedAt),
+    })
+    .from(documents);
+  return {
+    documents: row.documents,
+    readyDocuments: row.readyDocuments,
+    chunks: Number(row.chunks ?? 0),
+    pages: Number(row.pages ?? 0),
+    lastIndexedAt: row.lastIndexedAt ? new Date(row.lastIndexedAt) : null,
+  };
 }
