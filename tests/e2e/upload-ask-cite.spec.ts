@@ -27,7 +27,7 @@ test("upload a document, ask about it and open the cited source", async ({ page 
   await citation.hover();
   const preview = page.getByTestId("citation-preview");
   await expect(preview).toBeVisible();
-  await expect(preview.locator("mark")).toContainText("15:30 UTC");
+  await expect(preview.locator("mark").filter({ hasText: "15:30 UTC" }).first()).toBeVisible();
 
   // 4. Clicking it opens the document view at the cited chunk, with retrieval evidence
   await citation.click();
@@ -37,7 +37,7 @@ test("upload a document, ask about it and open the cited source", async ({ page 
   await expect(panel).toContainText("every Wednesday at 15:30 UTC");
 
   await expect(panel).toContainText("Retrieval evidence");
-  await expect(panel.locator("mark")).toContainText("15:30 UTC");
+  await expect(panel.locator("mark").filter({ hasText: "15:30 UTC" }).first()).toBeVisible();
 
   // 5. Follow-up questions use the conversation as context
   await page.keyboard.press("Escape");
