@@ -1,7 +1,7 @@
 import { asc, count, desc, eq, max, sql, sum } from "drizzle-orm";
 import type { Db } from "./db/client";
 import { chunks, documents, traces } from "./db/schema";
-import { NotFoundError } from "./errors";
+import { ForbiddenError, NotFoundError } from "./errors";
 
 const documentColumns = {
   id: documents.id,
@@ -11,6 +11,7 @@ const documentColumns = {
   byteSize: documents.byteSize,
   pageCount: documents.pageCount,
   status: documents.status,
+  origin: documents.origin,
   error: documents.error,
   chunkCount: documents.chunkCount,
   embeddingModel: documents.embeddingModel,
@@ -48,9 +49,19 @@ export async function getDocumentWithChunks(db: Db, id: string) {
   return { ...doc, chunks: rows };
 }
 
-export async function deleteDocument(db: Db, id: string): Promise<void> {
+export async function deleteDocument(db: Db, id: string, options: { keepSamples?: boolean } = {}): Promise<void> {
+  if (options.keepSamples) {
+    const doc = await getDocument(db, id);
+    if (doc.origin === "sample") throw new ForbiddenError("Sample documents can't be deleted in the public demo");
+  }
   const deleted = await db.delete(documents).where(eq(documents.id, id)).returning({ id: documents.id });
   if (deleted.length === 0) throw new NotFoundError("Document", id);
+}
+
+/** Visitor uploads currently stored (the demo caps this between resets). */
+export async function countUploads(db: Db): Promise<number> {
+  const [row] = await db.select({ n: count() }).from(documents).where(eq(documents.origin, "upload"));
+  return row.n;
 }
 
 export async function getChunk(db: Db, id: string) {

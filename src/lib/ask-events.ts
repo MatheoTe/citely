@@ -45,6 +45,7 @@ export interface ProviderModeView {
   embeddings: string;
   reranker: string | null;
   offline: boolean;
+  demo?: boolean;
 }
 
 export interface TimingsView {

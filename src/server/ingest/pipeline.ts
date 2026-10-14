@@ -29,7 +29,10 @@ export interface EnqueueResult {
  * it) yields one document. Returns immediately with status "queued"; the
  * expensive work happens in `processDocument`.
  */
-export async function enqueueDocument(db: Db, file: { filename: string; bytes: Uint8Array }): Promise<EnqueueResult> {
+export async function enqueueDocument(
+  db: Db,
+  file: { filename: string; bytes: Uint8Array; origin?: "sample" | "upload" },
+): Promise<EnqueueResult> {
   const sourceType: SourceType = detectSourceType(file.filename, file.bytes);
   const contentHash = sha256(file.bytes);
 
@@ -45,6 +48,7 @@ export async function enqueueDocument(db: Db, file: { filename: string; bytes: U
         sourceType,
         contentHash,
         byteSize: file.bytes.byteLength,
+        origin: file.origin ?? "upload",
       })
       .onConflictDoNothing({ target: documents.contentHash })
       .returning();

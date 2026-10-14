@@ -208,6 +208,7 @@ describe("resolveProviders", () => {
         embeddings: "local-hash-v1@1024",
         reranker: null,
         offline: true,
+        demo: false,
       });
       expect(providers.judge).toBeNull();
     } finally {

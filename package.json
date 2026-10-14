@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "npm run demo:setup && next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
@@ -15,6 +16,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env scripts/migrate.ts",
     "seed": "tsx --env-file-if-exists=.env scripts/seed.ts",
+    "demo:setup": "npm run db:migrate && npm run seed",
     "ingest:pending": "tsx --env-file-if-exists=.env scripts/process-pending.ts",
     "corpus:pdf": "tsx scripts/build-sample-pdf.ts",
     "eval": "tsx --env-file-if-exists=.env eval/run.ts",

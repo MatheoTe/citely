@@ -14,9 +14,15 @@ export async function getIngestDeps(): Promise<IngestDeps> {
   };
 }
 
-const globalForLimiter = globalThis as unknown as { __citelyAskLimiter?: RateLimiter };
+const globalForLimiter = globalThis as unknown as { __citelyAskLimiter?: RateLimiter; __citelyUploadLimiter?: RateLimiter };
 
 export function getAskRateLimiter(): RateLimiter {
   globalForLimiter.__citelyAskLimiter ??= new TokenBucketRateLimiter(getEnv().CITELY_RATE_LIMIT_PER_MINUTE);
   return globalForLimiter.__citelyAskLimiter;
+}
+
+/** Demo only: uploads per client IP per hour (same single-instance caveat as the ask limiter). */
+export function getUploadRateLimiter(): RateLimiter {
+  globalForLimiter.__citelyUploadLimiter ??= new TokenBucketRateLimiter(getEnv().DEMO_UPLOADS_PER_HOUR, 60 * 60_000);
+  return globalForLimiter.__citelyUploadLimiter;
 }

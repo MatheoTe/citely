@@ -20,6 +20,8 @@ export interface ProviderMode {
   embeddings: string;
   reranker: string | null;
   offline: boolean;
+  /** Public demo: offline on purpose, not for lack of keys. */
+  demo: boolean;
 }
 
 function pick<T extends string>(setting: "auto" | T, hasKey: boolean, real: T, fallback: T): T {
@@ -29,6 +31,10 @@ function pick<T extends string>(setting: "auto" | T, hasKey: boolean, real: T, f
 
 /** Resolve providers from configuration. Explicitly requesting a real provider without its key is a config error. */
 export function resolveProviders(env: Env = getEnv()): Providers {
+  // The public demo never spends money: keys in the environment are ignored unless explicitly allowed.
+  if (env.DEMO_MODE && !env.DEMO_ALLOW_LIVE) {
+    return { llm: new OfflineLlmProvider(), embeddings: new LocalHashEmbeddingProvider(EMBEDDING_DIMENSIONS), reranker: null, judge: null };
+  }
   const llmChoice = pick(env.CITELY_LLM_PROVIDER, !!env.ANTHROPIC_API_KEY, "anthropic", "offline");
   const embChoice = pick(env.CITELY_EMBEDDINGS_PROVIDER, !!env.VOYAGE_API_KEY, "voyage", "local");
   const rerankChoice = pick(env.CITELY_RERANKER, !!env.VOYAGE_API_KEY, "voyage", "none");
@@ -59,8 +65,9 @@ export function resolveProviders(env: Env = getEnv()): Providers {
   return { llm, embeddings, reranker, judge };
 }
 
-export function describeProviders(p: Providers): ProviderMode {
+export function describeProviders(p: Providers, env: Env = getEnv()): ProviderMode {
   return {
+    demo: env.DEMO_MODE,
     llm: p.llm.name === "anthropic" ? p.llm.answerModel : "offline (extractive)",
     embeddings: p.embeddings.model,
     reranker: p.reranker?.model ?? null,

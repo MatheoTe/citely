@@ -14,6 +14,12 @@ const optionalSecret = z
   .optional()
   .transform((v) => (v ? v : undefined));
 
+const flag = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v) => v === "1" || v?.toLowerCase() === "true");
+
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1).default("postgres://citely:citely@localhost:5432/citely"),
 
@@ -36,6 +42,22 @@ const envSchema = z.object({
 
   CITELY_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).default(20),
   CITELY_MAX_UPLOAD_MB: z.coerce.number().positive().max(50).default(10),
+
+  /**
+   * Public demo mode: offline providers (no paid calls) unless DEMO_ALLOW_LIVE,
+   * a tighter upload cap, protected sample documents and a resettable corpus.
+   */
+  DEMO_MODE: flag,
+  DEMO_ALLOW_LIVE: flag,
+  /** Shared secret for /api/demo/reset; the endpoint is disabled without it. */
+  DEMO_RESET_TOKEN: optionalSecret,
+  /** Set by Vercel for cron invocations (sent as `Authorization: Bearer …`). */
+  CRON_SECRET: optionalSecret,
+  DEMO_MAX_UPLOAD_MB: z.coerce.number().positive().max(50).default(2),
+  /** Upper bound on visitor uploads kept between resets. */
+  DEMO_MAX_UPLOADS: z.coerce.number().int().min(1).default(30),
+  /** Uploads per IP per hour. */
+  DEMO_UPLOADS_PER_HOUR: z.coerce.number().int().min(1).default(10),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -52,6 +74,12 @@ export function getEnv(): Env {
     cached = parsed.data;
   }
   return cached;
+}
+
+/** Upload size limit in bytes: the demo cap wins when it is the smaller one. */
+export function maxUploadBytes(env: Env = getEnv()): number {
+  const mb = env.DEMO_MODE ? Math.min(env.DEMO_MAX_UPLOAD_MB, env.CITELY_MAX_UPLOAD_MB) : env.CITELY_MAX_UPLOAD_MB;
+  return Math.round(mb * 1024 * 1024);
 }
 
 /** Test hook: forget the cached env so a test can mutate process.env. */

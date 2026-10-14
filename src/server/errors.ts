@@ -6,6 +6,8 @@
 export type ErrorCode =
   | "VALIDATION_FAILED"
   | "NOT_FOUND"
+  | "UNAUTHORIZED"
+  | "FORBIDDEN"
   | "RATE_LIMITED"
   | "UNSUPPORTED_FILE"
   | "PAYLOAD_TOO_LARGE"
@@ -46,10 +48,22 @@ export class NotFoundError extends AppError {
   }
 }
 
+export class UnauthorizedError extends AppError {
+  constructor(message = "Missing or invalid credentials") {
+    super("UNAUTHORIZED", 401, message);
+  }
+}
+
+export class ForbiddenError extends AppError {
+  constructor(message: string) {
+    super("FORBIDDEN", 403, message);
+  }
+}
+
 export class RateLimitedError extends AppError {
   readonly retryAfterSeconds: number;
-  constructor(retryAfterSeconds: number) {
-    super("RATE_LIMITED", 429, "Too many requests, slow down.", {
+  constructor(retryAfterSeconds: number, message = "Too many requests, slow down.") {
+    super("RATE_LIMITED", 429, message, {
       details: { retryAfterSeconds },
       headers: { "Retry-After": String(retryAfterSeconds) },
     });

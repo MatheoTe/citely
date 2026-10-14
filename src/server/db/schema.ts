@@ -34,6 +34,8 @@ const bytea = customType<{ data: Buffer; driverData: Buffer | Uint8Array }>({
 
 export const documentStatus = pgEnum("document_status", ["queued", "processing", "ready", "failed"]);
 export const sourceType = pgEnum("source_type", ["pdf", "markdown"]);
+/** "sample" = the bundled corpus (seeded, survives demo resets); "upload" = anything a user added. */
+export const documentOrigin = pgEnum("document_origin", ["sample", "upload"]);
 
 export const documents = pgTable(
   "documents",
@@ -47,6 +49,7 @@ export const documents = pgTable(
     byteSize: integer("byte_size").notNull(),
     pageCount: integer("page_count"),
     status: documentStatus("status").notNull().default("queued"),
+    origin: documentOrigin("origin").notNull().default("upload"),
     error: text("error"),
     chunkCount: integer("chunk_count").notNull().default(0),
     embeddingModel: text("embedding_model"),
