@@ -1,0 +1,50 @@
+# Engineering Onboarding Guide
+
+Kestrel Labs is a fictional company. This document is part of the Citely sample corpus and is rendered to PDF by scripts/build-sample-pdf.ts.
+
+This guide walks new engineers through their first six weeks at Kestrel Labs. Every new engineer is paired with an onboarding buddy from a different team, who is the first point of contact for questions that are not about the work itself.
+
+## 1. Before your first day
+
+About two weeks before your start date, the IT team ships your laptop to your home address. You choose between a 14-inch MacBook Pro and a Framework Laptop 16 running Linux. Shipping is tracked, and the laptop arrives already enrolled in device management.
+
+You will also receive an invitation to the HR portal, where you sign your contract addendum, add your bank details and choose your health insurance options. Please complete these steps before your first day so that payroll can run on time.
+
+<<<page>>>
+
+## 2. Week one
+
+Your first week is about access and context, not output. On day one you meet your manager and your onboarding buddy, and you join the company-wide welcome call that runs every Monday at 14:00 UTC.
+
+By the end of week one you should have:
+
+- Set up single sign-on with your hardware security key, which arrives in the same box as your laptop.
+- Cloned the monorepo and run the full test suite locally.
+- Read the last three postmortems and the architecture overview.
+- Shipped one small change to production, usually a documentation fix. Shipping on day five is a tradition, not a requirement.
+
+Production access is not granted during week one. It is requested just in time, later, once you have finished the security training.
+
+<<<page>>>
+
+## 3. Weeks two to four
+
+During weeks two to four you take on a starter project chosen by your manager. Starter projects are scoped to be finished in about ten working days and are deliberately on the critical path of a real roadmap item.
+
+You also complete the mandatory security training, which takes about three hours and must be finished by the end of week three. Passing the training is a prerequisite for requesting production access.
+
+The tools you will use every day are Linear for issue tracking, Grafana for dashboards and alerting, and the internal deploy tool called Kite. Kite deploys to production through a staged rollout: one percent of traffic first, then ten percent, then everyone, with automatic rollback if the error rate doubles.
+
+<<<page>>>
+
+## 4. Weeks five and six
+
+In weeks five and six you shadow two on-call shifts. During a shadow shift you receive every page that the primary on-call engineer receives, but you are not expected to respond on your own. Shadowing ends with a short review with the on-call guild.
+
+After both shadow shifts you are added to the regular on-call rotation, typically in your seventh week. Your first real on-call week is always paired with an experienced secondary.
+
+## 5. Your onboarding check-in
+
+At the end of week six you have an onboarding check-in with your manager. The check-in reviews the starter project, the feedback from your buddy and anything about the onboarding process that should be improved. Suggestions from these check-ins have shaped most of this guide.
+
+If anything in this guide is out of date, open a pull request against the handbook repository. The People team reviews onboarding changes every Thursday.
