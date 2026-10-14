@@ -1,8 +1,9 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { and, eq, ne, notExists, sql } from "drizzle-orm";
+import { and, eq, ne, notExists, notInArray, sql } from "drizzle-orm";
 import { chunks, documents, embeddingCache, traces } from "../db/schema";
 import { enqueueDocument, processDocument, type IngestDeps } from "../ingest/pipeline";
+import { sha256 } from "../ingest/text";
 
 // Runtime path (traced into the reset function via outputFileTracingIncludes), not a bundler import.
 export const SAMPLE_CORPUS_DIR = path.resolve(/* turbopackIgnore: true */ process.cwd(), "corpus");
@@ -17,13 +18,23 @@ export interface SeedRow {
 /**
  * Ingest the bundled sample corpus (corpus/*.md, corpus/*.pdf) as `sample`
  * documents. Idempotent: files already present (same sha256) are adopted as
- * samples and only (re)processed if they are not ready yet.
+ * samples and only (re)processed if they are not ready yet. Sample documents
+ * whose bytes no longer match any corpus file (an edited sample) are removed,
+ * so a corpus change replaces the old version instead of sitting next to it.
  */
 export async function seedSampleCorpus(deps: IngestDeps, dir = SAMPLE_CORPUS_DIR): Promise<SeedRow[]> {
   const files = (await readdir(dir)).filter((f) => /\.(md|pdf)$/i.test(f)).sort();
+  const corpus = await Promise.all(
+    files.map(async (filename) => ({ filename, bytes: new Uint8Array(await readFile(path.join(/* turbopackIgnore: true */ dir, filename))) })),
+  );
+  const currentHashes = corpus.map((f) => sha256(f.bytes));
+  // An empty listing (e.g. the corpus missing from a deployment bundle) must never wipe the samples.
+  if (currentHashes.length) {
+    await deps.db.delete(documents).where(and(eq(documents.origin, "sample"), notInArray(documents.contentHash, currentHashes)));
+  }
+
   const rows: SeedRow[] = [];
-  for (const filename of files) {
-    const bytes = new Uint8Array(await readFile(path.join(/* turbopackIgnore: true */ dir, filename)));
+  for (const { filename, bytes } of corpus) {
     const { document, deduplicated } = await enqueueDocument(deps.db, { filename, bytes, origin: "sample" });
     if (deduplicated && document.origin !== "sample") {
       await deps.db.update(documents).set({ origin: "sample" }).where(eq(documents.id, document.id));

@@ -1,9 +1,10 @@
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import type { DbHandle } from "@/server/db/client";
-import { documents, traces } from "@/server/db/schema";
+import { chunks, documents, traces } from "@/server/db/schema";
 import { seedSampleCorpus } from "@/server/demo/corpus";
 import { createTestDb, testIngestDeps } from "./helpers";
 
@@ -112,6 +113,30 @@ describe("public demo guards", () => {
     expect(after).toHaveLength(samples);
     expect(after.every((d) => d.origin === "sample" && d.status === "ready")).toBe(true);
     expect(await handle.db.select().from(traces)).toHaveLength(0);
+  });
+
+  it("replaces a sample whose corpus file changed instead of keeping both versions", async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "citevia-corpus-"));
+    try {
+      const deps = testIngestDeps(handle);
+      await writeFile(path.join(dir, "note.md"), "# Note\n\nOld wording of the sample.\n");
+      await seedSampleCorpus(deps, dir);
+      await writeFile(path.join(dir, "note.md"), "# Note\n\nNew wording of the sample.\n");
+      await seedSampleCorpus(deps, dir);
+
+      const samples = await handle.db.select().from(documents).where(eq(documents.origin, "sample"));
+      expect(samples).toHaveLength(1);
+      expect(samples[0].status).toBe("ready");
+      const [chunk] = await handle.db.select().from(chunks).where(eq(chunks.documentId, samples[0].id));
+      expect(chunk.content).toContain("New wording");
+
+      await rm(path.join(dir, "note.md"));
+      await seedSampleCorpus(deps, dir); // an empty corpus listing never wipes the samples
+      expect(await handle.db.select().from(documents).where(eq(documents.origin, "sample"))).toHaveLength(1);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+      await seedSampleCorpus(testIngestDeps(handle));
+    }
   });
 
   it("does not exist outside demo mode", async () => {
