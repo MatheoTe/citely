@@ -1,3 +1,4 @@
+import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { vector } from "@electric-sql/pglite-pgvector";
@@ -29,6 +30,7 @@ export async function createDb(url: string): Promise<DbHandle> {
   if (url.startsWith("pglite://")) {
     const target = url.slice("pglite://".length);
     const dataDir = target === "" || target === "memory" ? undefined : path.resolve(target);
+    if (dataDir) mkdirSync(path.dirname(dataDir), { recursive: true });
     const client = await PGlite.create(dataDir, { extensions: { vector } });
     await client.exec("CREATE EXTENSION IF NOT EXISTS vector;");
     const db = drizzlePglite(client, { schema }) as unknown as Db;
