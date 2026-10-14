@@ -10,14 +10,14 @@ It is built like a production service rather than a notebook demo: an idempotent
 ![Postgres](https://img.shields.io/badge/Postgres-pgvector-4169E1?logo=postgresql&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-![Asking a question: the answer cites two documents and the source panel shows the exact chunk](docs/screenshots/ask-citations.png)
+![A Claude answer with inline citation pills; hovering one previews the cited passage with the supporting sentence highlighted](docs/screenshots/citation-preview.jpg)
 
 > **Demo GIF — to record.** A 20–30 s capture with real API keys configured:
 > 1. Drag a PDF onto **Documents** and watch it go *Queued → Processing → Ready*.
 > 2. On **Ask**, type a question about it; show the answer streaming in.
 > 3. Click a citation chip → the source panel opens → **Open in document** jumps to the highlighted chunk/page.
 > 4. Ask something the document doesn't cover → *"I don't know based on the provided documents."*
-> 5. Open **Traces** and expand the request: latency breakdown, retrieval ranks, tokens and cost.
+> 5. Open **Traces** and expand the request: latency waterfall, retrieval ranks, tokens and cost.
 >
 > Save it as `docs/demo.gif` and replace this note with `![Citely demo](docs/demo.gif)`.
 
@@ -37,15 +37,27 @@ It is built like a production service rather than a notebook demo: an idempotent
 - **Ingestion pipeline** — PDF text extraction with page numbers and Markdown parsing into one block model; heading-aware chunking with sentence-level overlap; sha256 content addressing so re-uploads are no-ops; background processing with `queued → processing → ready | failed` status, a compare-and-set claim with a lease for crashed workers, and atomic chunk swaps.
 - **Hybrid retrieval** — Postgres full-text search (`tsvector`, `ts_rank_cd`, heading-weighted) and pgvector cosine similarity (HNSW), fused with Reciprocal Rank Fusion, plus an optional cross-encoder reranking stage.
 - **Grounded generation** — Claude answers only from numbered passages, cites every factual sentence as `[n]`, and returns a fixed abstention sentence when the context is insufficient. Citations are parsed and validated server-side: a marker pointing at a passage that doesn't exist is never rendered as a link.
-- **Streaming UX** — NDJSON event stream (`meta → sources → delta* → done`), clickable citation chips, a source panel with section and page, deep links to the highlighted chunk.
-- **Observability** — every request stores a trace: per-stage latency (rewrite, embed, FTS, vector, rerank, generation, time to first token), the FTS/vector/RRF ranks of each retrieved chunk, token usage including prompt-cache reads, and an estimated cost. The **Traces** page shows p50/p95 latency, cost per request and abstention rate.
+- **Answer experience** — a live pipeline view (rewrite → full-text → vector → RRF → rerank → generate) whose stage timings fill in as events stream; markdown answers with citation pills; hovering a pill previews the passage with the supporting sentence highlighted, clicking opens a slide-over document view scrolled to the chunk with its FTS rank, vector rank and fused score; source cards with relevance bars and *FTS / vector / both* badges; multi-turn conversations whose follow-ups are rewritten into standalone queries, plus copy and regenerate.
+- **Observability** — every request stores a trace: each stage's start offset and duration (rendered as a waterfall with a time-to-first-token marker), the FTS/vector/RRF ranks of each retrieved chunk, token usage including prompt-cache reads, and an estimated cost split per step. The **Traces** page adds p50/p95 latency, cost per request and abstention rate.
+- **Ingestion you can watch** — drag-and-drop uploads show live progress (queued → parsing → chunking → embedding → ready) with per-stage timings, and a chunk explorer with an outline, filtering and deep links.
 - **Evaluation harness** — `npm run eval` scores retrieval (recall@k, MRR, recall under a token budget) and generation (key-fact accuracy, citation precision, abstention accuracy, LLM-as-judge faithfulness) on a labelled golden set. CI fails if the offline metrics regress.
 - **Runs with zero API keys** — every provider sits behind an interface with a deterministic local implementation, so the app, the test suite and CI work offline end to end.
 - **Hardening** — zod validation on every input (bodies, params, query strings, env), typed errors mapped to stable JSON responses, token-bucket rate limiting on `/api/ask`, upload size/type checks with magic-number sniffing, a system prompt that treats passages as untrusted data.
 
-| Documents | Traces |
+### Screenshots
+
+All captured from the running app (dark theme is the default; Claude Sonnet 5.5 answering, local embeddings).
+
+| | |
 | --- | --- |
-| ![Document library with ingestion status](docs/screenshots/documents.png) | ![Trace detail with latency breakdown and retrieval ranks](docs/screenshots/traces-dark.png) |
+| ![Hero with suggested questions and live corpus stats](docs/screenshots/home.jpg) | ![Live pipeline: stage timings fill in while the answer is generated](docs/screenshots/pipeline-live.jpg) |
+| **Empty state** — pitch, suggested questions from the corpus, live corpus stats. | **Live pipeline** — each stage lights up with its timing; the rewritten search query is shown. |
+| ![Source panel scrolled to the cited chunk with retrieval evidence bars](docs/screenshots/source-panel.jpg) | ![Trace with latency waterfall, token and cost breakdown](docs/screenshots/traces.jpg) |
+| **Source panel** — the document, scrolled to the cited chunk, supporting sentence highlighted, FTS/vector/fused evidence. | **Traces** — latency waterfall with TTFT marker, token split, cost per step, retrieval ranks. |
+| ![Documents with animated ingestion progress](docs/screenshots/documents.jpg) | ![Chunk explorer with outline and filter](docs/screenshots/chunk-explorer.jpg) |
+| **Documents** — drag-and-drop upload with live five-step ingestion progress. | **Chunk explorer** — outline, filter, page and token badges, deep links from citations. |
+
+The light theme is tuned too: [`docs/screenshots/home-light.jpg`](docs/screenshots/home-light.jpg).
 
 ## Architecture
 
@@ -85,7 +97,7 @@ flowchart LR
 | Layer | Choice |
 | --- | --- |
 | App | Next.js 16 (App Router, Cache Components), React 19, TypeScript strict |
-| UI | Tailwind CSS v4, shadcn/ui-style components, `next-themes`, lucide icons |
+| UI | Tailwind CSS v4 design tokens, shadcn/ui-style components, `motion`, `react-markdown`, Inter Tight + Instrument Serif + Geist, CSS-only animated backdrop (respects `prefers-reduced-motion`) |
 | Data | Postgres 17 + pgvector (Docker), Drizzle ORM + SQL migrations; PGlite (WASM Postgres + pgvector) as embedded fallback |
 | LLM | `@anthropic-ai/sdk` — `claude-sonnet-5-5` for answers, `claude-haiku-4-5-20251001` for query rewriting and the judge |
 | Embeddings / rerank | Voyage `voyage-4` (1024-d) and `rerank-3`; deterministic hashed n-gram embeddings offline |
@@ -137,7 +149,7 @@ The system prompt is frozen (no per-request data), carries the citation rules an
 ### Claude usage and cost control
 
 - **Model split** — Haiku 4.5 rewrites the question into a keyword-rich search query (short output, cheap); Sonnet 5.5 writes the answer at `effort: low` (configurable): grounded QA over six short passages does not need deep reasoning, and latency matters in a chat UX.
-- **Prompt caching** — the frozen system prompt carries `cache_control`; the retrieved passages vary per request and sit after the breakpoint. Cache reads and writes are recorded on each trace and priced separately. The rewrite prompt is too short to reach Haiku's minimum cacheable prefix, so it is deliberately left unmarked.
+- **Prompt caching** — the frozen system prompt carries `cache_control`; the retrieved passages vary per request and sit after the breakpoint. Cache reads and writes are recorded on each trace and priced separately. Honest status: at ~400 tokens today's system prompt is below the minimum cacheable prefix, so traces show 0 cached tokens; the breakpoint starts paying off as soon as the prompt grows (few-shot examples, longer policies). The rewrite prompt is deliberately left unmarked for the same reason.
 - **Cost estimates** come from a pricing table (`src/server/observability/pricing.ts`); unknown models are reported as *n/a*, never as $0.
 
 ### Offline providers for reproducibility
@@ -145,7 +157,7 @@ The system prompt is frozen (no per-request data), carries the citation rules an
 `EmbeddingProvider`, `Reranker` and `LlmProvider` are interfaces, each with a real and a local implementation, picked in `auto` mode by the presence of API keys:
 
 - **Hashed n-gram embeddings** — stemmed words, word bigrams and character trigrams, signed feature hashing into 1,024 dimensions, L2-normalised. Deterministic and free, but lexical rather than semantic.
-- **Extractive answerer** — scores each sentence of the retrieved passages by idf-weighted overlap with the question and returns the best one or two verbatim with `[n]` markers, or the abstention sentence. It streams through the same code path as Claude.
+- **Extractive answerer** — scores each sentence of the retrieved passages by idf-weighted overlap with the question, then stitches a cited answer from verbatim sentences: the best sentence and its on-topic continuation, plus supporting sentences from other passages as a markdown list — or the abstention sentence. It resolves follow-ups by borrowing the previous question's terms and streams through the same code path as Claude.
 
 The whole stack — pgvector, HNSW, RRF, streaming, citations, traces, evals — is therefore testable in CI without secrets or flakiness. Vectors are stored with the model that produced them and retrieval only compares vectors from the active model; `npm run ingest:pending -- --reindex` re-embeds after a provider switch, reusing the content-addressed embedding cache. Chunk ids are name-based UUIDs derived from content, so rankings (including tie-breaks) are reproducible across re-ingestion.
 
@@ -169,17 +181,21 @@ Current baseline from `npm run eval:ci` — offline providers (`local-hash-v1` e
 
 By question type (MRR@10): FTS leads on *lexical* questions (0.947 vs 0.912 for vector), the vector side leads on *paraphrase* (0.926 vs 0.806), and hybrid sits between them (0.947 lexical, 0.889 paraphrase).
 
-**Generation** (offline extractive answerer, k = 6)
+**Generation** (k = 6, same retrieval; offline row from `npm run eval:ci`, Claude row from one `npm run eval` with `ANTHROPIC_API_KEY` set)
 
-| Key-fact accuracy | Citation precision | Answered with citation | False abstention | Abstention accuracy | Faithfulness (LLM judge) |
-| --- | --- | --- | --- | --- | --- |
-| 71.8% | 91.7% | 76.9% | 23.1% | 50.0% | skipped offline |
+| Answerer | Key-fact accuracy | Citation precision | False abstention | Abstention accuracy | Faithfulness (Haiku judge) | Latency p50 / p95 | First token p50 | Cost, 43 answers |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Offline extractive | 74.4% | 90.0% | 23.1% | 2 / 4 | — | 0.3 s / 0.8 s | — | $0 |
+| **Claude Sonnet 5.5** (+ Haiku 4.5 rewrite) | **97.4%** | **92.1%** | **2.6%** | **4 / 4** | **98.2%** | 2.2 s / 3.1 s | 1.6 s | $0.18 (+ $0.06 judge) |
+
+The single Claude miss is instructive: for *"How old can a webhook timestamp be before the receiver should reject it?"* the local embeddings surfaced incident-postmortem chunks instead of the signatures section, and Claude correctly answered *"I don't know based on the provided documents"* rather than reaching for prior knowledge — a retrieval miss, not a hallucination. Report: [`eval/reports/live-latest.json`](eval/reports/live-latest.json).
 
 What these numbers do and don't say:
 
 - **Offline, hybrid does not beat vector-only.** The offline "vector" retriever is itself lexical (hashed n-grams), so fusion combines two correlated lexical signals. The case for hybrid is a *semantic* embedder plus FTS for identifiers — run `npm run eval` with `VOYAGE_API_KEY` set to measure that configuration (a `hybrid + rerank` row appears automatically when a reranker is configured).
 - **The corpus is small** (54 chunks): recall@5 and @10 saturate, so recall@1 and MRR carry the signal. A larger, noisier corpus is on the roadmap.
-- **The extractive answerer trades recall for safety.** Its coverage threshold (0.5) was chosen with a sweep: 0.40 raises key-fact accuracy to 76.9% but abstains on only 1 of the 4 unanswerable questions; 0.50 abstains on 2 of 4 with 91.7% citation precision. With `ANTHROPIC_API_KEY` set, the same harness evaluates Claude and adds **faithfulness**, scored by Claude Haiku 4.5 as an LLM judge with structured output.
+- **The eval gate earns its keep.** The first version of the stitched offline answers accepted supporting sentences scoring 60% of the lead; CI's eval gate failed it (citation precision fell to 83.9%, below the 85% minimum). Tightening to 75% gave 74.4% key-fact accuracy (up from 71.8% for one-sentence answers) at 90.0% citation precision.
+- **Faithfulness** is scored by Claude Haiku 4.5 as an LLM judge with structured output; it only runs when `ANTHROPIC_API_KEY` is set, and a failing judge call is recorded rather than aborting the run.
 
 Metric definitions live in [`eval/metrics.ts`](eval/metrics.ts). Each run writes a JSON report with per-question rows to `eval/reports/`; the committed baseline is [`eval/reports/latest.json`](eval/reports/latest.json). CI fails below the minimums in [`eval/thresholds.json`](eval/thresholds.json).
 
@@ -235,13 +251,14 @@ Errors always look like `{ "error": { "code": "VALIDATION_FAILED", "message": "�
 ```bash
 npm run typecheck          # next typegen + tsc --noEmit
 npm run lint
-npm run test:unit          # 72 tests: chunker, parsers, RRF, tsquery, citations, providers, rate limiter, eval metrics…
-npm run test:integration   # 23 tests: ingestion, hybrid retrieval, answer pipeline, HTTP routes
+npm run test:unit          # 81 tests: chunker, parsers, RRF, tsquery, citations + highlighting, providers, rate limiter, waterfall, eval metrics…
+npm run test:integration   # 24 tests: ingestion + progress, hybrid retrieval, answer pipeline + follow-ups, HTTP routes
 npm run eval:ci            # offline eval + thresholds
-npm run build && npm run test:e2e   # Playwright: upload → ask → citation → document → trace
+npm run build && npm run test:e2e   # Playwright: upload → live pipeline → citation preview → source panel → follow-up → document → waterfall
 ```
 
 - **Integration tests** run against Postgres + pgvector when `TEST_DATABASE_URL` is set (`docker compose up -d`, or the CI service container) and against embedded PGlite + pgvector otherwise — same migrations, same SQL.
+- **Tests never call paid APIs**: Vitest and Playwright force the offline providers even if `.env` holds keys; CI sets them too.
 - **E2E** boots `next start` with offline providers and a throwaway database (`E2E_DATABASE_URL`, PGlite by default). Locally, `PW_CHANNEL=chrome npm run test:e2e` reuses an installed Google Chrome instead of downloading Chromium.
 - **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)): typecheck · lint · unit tests · offline eval gate → integration tests on `pgvector/pgvector:pg17` → production build · Playwright E2E against Postgres.
 
