@@ -2,7 +2,7 @@
 
 Welcome to Kestrel Labs. This handbook explains how we work, what we offer and what we expect from each other. It applies to every full-time employee regardless of location. Contractors should refer to their own agreements.
 
-> Kestrel Labs is a fictional company. This document is part of the Citely sample corpus.
+> Kestrel Labs is a fictional company. This document is part of the Citevia sample corpus.
 
 ## How we work
 

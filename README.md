@@ -127,20 +127,20 @@ The 256-token default comes from `npm run eval:sweep` (offline providers, hybrid
 
 | Strategy | Target | Chunks | Avg tokens | Recall@1 | Recall@5 | MRR@10 | Recall ≤500 tok | Recall ≤1000 tok |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| heading-aware | 128 | 66 | 80 | 80.8% | 94.9% | 0.887 | 94.9% | 100.0% |
-| **heading-aware** | **256** | **54** | **96** | **79.5%** | **97.4%** | **0.885** | **97.4%** | **100.0%** |
-| heading-aware | 512 | 54 | 96 | 79.5% | 97.4% | 0.885 | 97.4% | 100.0% |
-| heading-aware | 1024 | 54 | 96 | 79.5% | 97.4% | 0.885 | 97.4% | 100.0% |
-| fixed window | 128 | 63 | 95 | 78.2% | 97.4% | 0.873 | 97.4% | 100.0% |
+| heading-aware | 128 | 66 | 80 | 83.3% | 97.4% | 0.905 | 97.4% | 100.0% |
+| **heading-aware** | **256** | **54** | **96** | **85.9%** | **97.4%** | **0.923** | **97.4%** | **100.0%** |
+| heading-aware | 512 | 54 | 96 | 85.9% | 97.4% | 0.923 | 97.4% | 100.0% |
+| heading-aware | 1024 | 54 | 96 | 85.9% | 97.4% | 0.923 | 97.4% | 100.0% |
+| fixed window | 128 | 63 | 95 | 80.8% | 97.4% | 0.884 | 97.4% | 100.0% |
 | fixed window | 256 | 29 | 210 | 91.0% | 100.0% | 0.953 | 93.6% | 100.0% |
-| fixed window | 512 | 14 | 439 | 85.9% | 100.0% | 0.936 | 85.9% | 100.0% |
-| fixed window | 1024 | 8 | 726 | 88.5% | 100.0% | 0.949 | 88.5% | 88.5% |
+| fixed window | 512 | 14 | 439 | 91.0% | 100.0% | 0.962 | 91.0% | 100.0% |
+| fixed window | 1024 | 8 | 727 | 91.0% | 100.0% | 0.962 | 91.0% | 91.0% |
 
 How to read it:
 
 - **Chunk-level recall@k rewards big chunks.** A 1,024-token window "contains" the answer because it contains half the document. The sweep therefore also reports *recall under a context budget* (take ranked chunks until 500 / 1,000 tokens are spent). At a 500-token budget heading-aware/256 wins (97.4% vs 93.6% for the best fixed window), and it gives the LLM — and the reader who clicks the citation — a focused passage instead of a page of text.
-- **Above 256 the target is a no-op on this corpus**: every section already fits, so heading boundaries decide. 128 starts splitting sections and loses recall@5. 256 is the smallest target that keeps sections whole, with headroom for longer real-world sections.
-- **Fixed windows rank the right region first more often** (recall@1 91.0% vs 79.5%), because larger chunks match more query terms. If answers routinely span sections, that is the trade-off to revisit — with the eval harness, not by intuition. (The fixed-window mode stays in the chunker as `respectHeadings: false` for exactly that.)
+- **Above 256 the target is a no-op on this corpus**: every section already fits, so heading boundaries decide. 128 starts splitting sections and loses ranking quality (recall@1 83.3% vs 85.9%, MRR 0.905 vs 0.923). 256 is the smallest target that keeps sections whole, with headroom for longer real-world sections.
+- **Fixed windows rank the right region first more often** (recall@1 91.0% vs 85.9%), because larger chunks match more query terms. If answers routinely span sections, that is the trade-off to revisit — with the eval harness, not by intuition. (The fixed-window mode stays in the chunker as `respectHeadings: false` for exactly that.)
 
 ### Grounding and abstention
 
@@ -179,11 +179,11 @@ Current baseline from `npm run eval:ci` — offline providers (`local-hash-v1` e
 
 | Retriever | Recall@1 | Recall@3 | Recall@5 | Recall@10 | MRR@10 | Recall ≤500 tok |
 | --- | --- | --- | --- | --- | --- | --- |
-| FTS only | 74.4% | 98.7% | 100.0% | 100.0% | 0.859 | 100.0% |
+| FTS only | 76.9% | 98.7% | 100.0% | 100.0% | 0.872 | 100.0% |
 | Vector only | 83.3% | 97.4% | 97.4% | 100.0% | 0.905 | 97.4% |
-| Hybrid (RRF) | 79.5% | 96.2% | 97.4% | 100.0% | 0.885 | 97.4% |
+| Hybrid (RRF) | 85.9% | 97.4% | 97.4% | 100.0% | 0.923 | 97.4% |
 
-By question type (MRR@10): FTS leads on *lexical* questions (0.947 vs 0.912 for vector), the vector side leads on *paraphrase* (0.926 vs 0.806), and hybrid sits between them (0.947 lexical, 0.889 paraphrase).
+By question type (MRR@10): FTS leads on *lexical* questions (0.947 vs 0.912 for vector), the vector side leads on *paraphrase* (0.926 vs 0.847), and hybrid keeps the better of the two on each (0.947 lexical, 0.931 paraphrase).
 
 **Generation** (k = 6, same retrieval; offline row from `npm run eval:ci`, Claude row from one `npm run eval` with `ANTHROPIC_API_KEY` set)
 
@@ -196,7 +196,7 @@ The single Claude miss is instructive: for *"How old can a webhook timestamp be 
 
 What these numbers do and don't say:
 
-- **Offline, hybrid does not beat vector-only.** The offline "vector" retriever is itself lexical (hashed n-grams), so fusion combines two correlated lexical signals. The case for hybrid is a *semantic* embedder plus FTS for identifiers — run `npm run eval` with `VOYAGE_API_KEY` set to measure that configuration (a `hybrid + rerank` row appears automatically when a reranker is configured).
+- **Offline, hybrid beats vector-only only narrowly.** Recall@1 85.9% vs 83.3% and MRR 0.923 vs 0.905, with identical recall@5 (97.4%, the same `pm-root-cause` miss). The offline "vector" retriever is itself lexical (hashed n-grams), so fusion combines two correlated lexical signals. The case for hybrid is a *semantic* embedder plus FTS for identifiers — run `npm run eval` with `VOYAGE_API_KEY` set to measure that configuration (a `hybrid + rerank` row appears automatically when a reranker is configured).
 - **The corpus is small** (54 chunks): recall@5 and @10 saturate, so recall@1 and MRR carry the signal. A larger, noisier corpus is on the roadmap.
 - **The eval gate earns its keep.** The first version of the stitched offline answers accepted supporting sentences scoring 60% of the lead; CI's eval gate failed it (citation precision fell to 83.9%, below the 85% minimum). Tightening to 75% gave 74.4% key-fact accuracy (up from 71.8% for one-sentence answers) at 90.0% citation precision.
 - **Faithfulness** is scored by Claude Haiku 4.5 as an LLM judge with structured output; it only runs when `ANTHROPIC_API_KEY` is set, and a failing judge call is recorded rather than aborting the run.
@@ -291,7 +291,7 @@ Errors always look like `{ "error": { "code": "VALIDATION_FAILED", "message": "�
 npm run typecheck          # next typegen + tsc --noEmit
 npm run lint
 npm run test:unit          # 90 tests: chunker, parsers, RRF, tsquery, citations + highlighting, providers, rate limiter, waterfall, eval metrics, demo guards…
-npm run test:integration   # 30 tests: ingestion + progress, hybrid retrieval, answer pipeline + follow-ups, HTTP routes, demo reset
+npm run test:integration   # 31 tests: ingestion + progress, hybrid retrieval, answer pipeline + follow-ups, HTTP routes, demo reset
 npm run eval:ci            # offline eval + thresholds
 npm run build && npm run test:e2e   # Playwright: upload → live pipeline → citation preview → source panel → follow-up → document → waterfall
 ```

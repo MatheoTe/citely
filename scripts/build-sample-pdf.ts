@@ -24,8 +24,8 @@ async function main() {
   pdf.setAuthor("Kestrel Labs (fictional)");
   pdf.setCreationDate(fixedDate);
   pdf.setModificationDate(fixedDate);
-  pdf.setProducer("citely/build-sample-pdf");
-  pdf.setCreator("citely/build-sample-pdf");
+  pdf.setProducer("citevia/build-sample-pdf");
+  pdf.setCreator("citevia/build-sample-pdf");
 
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);

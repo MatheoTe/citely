@@ -2,7 +2,7 @@
 
 Kestrel Relay is billed monthly by event volume. An event counts once when it is published, no matter how many subscribers receive it or how many delivery attempts it needs.
 
-> Kestrel Labs is a fictional company. This document is part of the Citely sample corpus.
+> Kestrel Labs is a fictional company. This document is part of the Citevia sample corpus.
 
 ## Plans
 

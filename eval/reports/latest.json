@@ -1,6 +1,7 @@
 {
-  "generatedAt": "2026-10-14T13:51:35.689Z",
+  "generatedAt": "2026-10-14T18:24:11.258Z",
   "providers": {
+    "demo": false,
     "llm": "offline (extractive)",
     "embeddings": "local-hash-v1@1024",
     "reranker": null,
@@ -21,18 +22,18 @@
     {
       "config": "fts only",
       "recall": {
-        "@1": 0.7435897435897436,
+        "@1": 0.7692307692307693,
         "@3": 0.9871794871794872,
         "@5": 1,
         "@10": 1
       },
-      "mrr": 0.8589743589743589,
+      "mrr": 0.8717948717948718,
       "budgeted": {
         "500": 1,
         "1000": 1
       },
       "p50Ms": 1,
-      "p95Ms": 2,
+      "p95Ms": 3,
       "misses": []
     },
     {
@@ -48,7 +49,7 @@
         "500": 0.9743589743589743,
         "1000": 1
       },
-      "p50Ms": 2,
+      "p50Ms": 1,
       "p95Ms": 3,
       "misses": [
         "pm-root-cause"
@@ -57,18 +58,18 @@
     {
       "config": "hybrid (RRF)",
       "recall": {
-        "@1": 0.7948717948717948,
-        "@3": 0.9615384615384616,
+        "@1": 0.8589743589743589,
+        "@3": 0.9743589743589743,
         "@5": 0.9743589743589743,
         "@10": 1
       },
-      "mrr": 0.8846153846153848,
+      "mrr": 0.9230769230769232,
       "budgeted": {
         "500": 0.9743589743589743,
         "1000": 1
       },
       "p50Ms": 2,
-      "p95Ms": 8,
+      "p95Ms": 5,
       "misses": [
         "pm-root-cause"
       ]
@@ -85,8 +86,8 @@
       "judgeCostUsd": 0,
       "judgeErrors": 0,
       "answerCostUsd": 0,
-      "latencyP50Ms": 335,
-      "latencyP95Ms": 823,
+      "latencyP50Ms": 333,
+      "latencyP95Ms": 827,
       "ttftP50Ms": 7
     },
     "rows": [
@@ -385,7 +386,7 @@
         "keyFacts": true,
         "citationPrecision": 0.5,
         "faithfulness": null,
-        "answer": "Customers on the Scale plan received an SLA credit, because monthly availability in the EU region fell to 99.89%, below the 99.95% commitment. [3]\n\nIf availability falls below the commitment, the customer receives a service credit of 10% of the monthly fee for each full 0.1% below the target, up to a maximum of 50% of the monthly fee. [1]"
+        "answer": "Customers on the Scale plan received an SLA credit, because monthly availability in the EU region fell to 99.89%, below the 99.95% commitment. [2]\n\nIf availability falls below the commitment, the customer receives a service credit of 10% of the monthly fee for each full 0.1% below the target, up to a maximum of 50% of the monthly fee. [1]"
       },
       {
         "id": "price-free-quota",
@@ -421,7 +422,7 @@
         "keyFacts": true,
         "citationPrecision": 1,
         "faithfulness": null,
-        "answer": "The tools you will use every day are Linear for issue tracking, Grafana for dashboards and alerting, and the internal deploy tool called Kite. [2]"
+        "answer": "The tools you will use every day are Linear for issue tracking, Grafana for dashboards and alerting, and the internal deploy tool called Kite. [1]"
       },
       {
         "id": "onb-security-training",

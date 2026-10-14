@@ -2,7 +2,7 @@
 
 **Status:** Final · **Severity:** SEV-2 · **Authors:** Platform Reliability team
 
-> Kestrel Labs is a fictional company. This document is part of the Citely sample corpus.
+> Kestrel Labs is a fictional company. This document is part of the Citevia sample corpus.
 
 ## Summary
 

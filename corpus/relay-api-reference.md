@@ -2,7 +2,7 @@
 
 Kestrel Relay is a webhook delivery platform. Producers publish events to Relay, and Relay delivers them to subscriber endpoints with retries, signatures and an audit trail. This reference covers version 3 of the public REST API, served from `https://api.kestrel.example/v3`.
 
-> Kestrel Labs is a fictional company. This document is part of the Citely sample corpus.
+> Kestrel Labs is a fictional company. This document is part of the Citevia sample corpus.
 
 ## Authentication
 

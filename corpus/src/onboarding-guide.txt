@@ -1,6 +1,6 @@
 # Engineering Onboarding Guide
 
-Kestrel Labs is a fictional company. This document is part of the Citely sample corpus and is rendered to PDF by scripts/build-sample-pdf.ts.
+Kestrel Labs is a fictional company. This document is part of the Citevia sample corpus and is rendered to PDF by scripts/build-sample-pdf.ts.
 
 This guide walks new engineers through their first six weeks at Kestrel Labs. Every new engineer is paired with an onboarding buddy from a different team, who is the first point of contact for questions that are not about the work itself.
 

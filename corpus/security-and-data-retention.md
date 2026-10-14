@@ -2,7 +2,7 @@
 
 This policy describes how Kestrel Labs protects customer data in Kestrel Relay and how long each kind of data is kept. It is reviewed every year by the Security Engineering team and approved by the CTO.
 
-> Kestrel Labs is a fictional company. This document is part of the Citely sample corpus.
+> Kestrel Labs is a fictional company. This document is part of the Citevia sample corpus.
 
 ## Encryption
 
