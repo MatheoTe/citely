@@ -18,12 +18,18 @@ interface Section {
  * cross a section boundary: a chunk that mixes two topics retrieves poorly
  * for both, and its citation would point at the wrong heading.
  */
-function toSections(blocks: Block[], targetTokens: number): Section[] {
+function toSections(blocks: Block[], targetTokens: number, respectHeadings: boolean): Section[] {
   const sections: Section[] = [];
   const stack: { level: number; text: string }[] = [];
   let current: Section | null = null;
 
   for (const block of blocks) {
+    if (block.kind === "heading" && !respectHeadings) {
+      // Naive mode: a heading is just more text in the stream.
+      current ??= sections[sections.push({ headingPath: "", units: [] }) - 1];
+      current.units.push({ text: block.text, tokens: estimateTokens(block.text), page: block.page });
+      continue;
+    }
     if (block.kind === "heading") {
       while (stack.length && stack[stack.length - 1].level >= block.level) stack.pop();
       stack.push({ level: block.level, text: block.text });
@@ -73,7 +79,7 @@ function overlapTail(units: Unit[], budget: number): Unit[] {
  *     boundary remain retrievable from either side.
  */
 export function chunkBlocks(blocks: Block[], options: ChunkOptions): DraftChunk[] {
-  const { targetTokens, overlapTokens } = options;
+  const { targetTokens, overlapTokens, respectHeadings = true } = options;
   if (targetTokens <= 0) throw new Error("targetTokens must be positive");
   if (overlapTokens >= targetTokens) throw new Error("overlapTokens must be smaller than targetTokens");
 
@@ -92,7 +98,7 @@ export function chunkBlocks(blocks: Block[], options: ChunkOptions): DraftChunk[
     });
   };
 
-  for (const section of toSections(blocks, targetTokens)) {
+  for (const section of toSections(blocks, targetTokens, respectHeadings)) {
     let buffer: Unit[] = [];
     let bufferTokens = 0;
     let freshTokens = 0; // tokens not inherited from overlap

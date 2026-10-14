@@ -18,6 +18,11 @@ export interface ChunkOptions {
   targetTokens: number;
   /** Tokens of trailing context repeated at the start of the next chunk in the same section. */
   overlapTokens: number;
+  /**
+   * Split at headings and record heading paths (default). `false` gives a
+   * naive sliding window over the whole document — kept for the eval ablation.
+   */
+  respectHeadings?: boolean;
 }
 
 export interface DraftChunk {
