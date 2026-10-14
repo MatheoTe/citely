@@ -14,7 +14,7 @@ async function ProviderBadge() {
 export function LogoMark({ className = "size-8" }: { className?: string }) {
   return (
     <span
-      className={`relative grid ${className} place-items-center overflow-hidden rounded-[10px] bg-[conic-gradient(from_210deg,var(--blob-1),var(--blob-2),var(--blob-3),var(--blob-1))] shadow-[inset_0_1px_0_0_rgb(255_255_255/0.35),0_4px_16px_-4px_color-mix(in_oklch,var(--primary)_70%,transparent)]`}
+      className={`relative grid ${className} place-items-center overflow-hidden rounded-[10px] bg-[conic-gradient(from_210deg,oklch(0.58_0.24_285),oklch(0.62_0.17_225),oklch(0.6_0.22_330),oklch(0.58_0.24_285))] shadow-[inset_0_1px_0_0_rgb(255_255_255/0.35),0_4px_16px_-4px_color-mix(in_oklch,var(--primary)_70%,transparent)]`}
     >
       <svg viewBox="0 0 24 24" className="size-[55%] text-white drop-shadow" fill="none" aria-hidden="true">
         <path d="M7 7h4v4c0 3-1.6 5-4 6M14 7h4v4c0 3-1.6 5-4 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />

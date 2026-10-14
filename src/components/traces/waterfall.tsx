@@ -33,7 +33,11 @@ export function Waterfall({ timings }: { timings: TimingsView }) {
     <div className="space-y-2" data-testid="waterfall">
       <div className="relative ml-[118px] h-4 text-[10px] text-muted-foreground">
         {ticks.map((t) => (
-          <span key={t} className="absolute -translate-x-1/2 font-mono" style={{ left: `${t * 100}%` }}>
+          <span
+            key={t}
+            className={`absolute whitespace-nowrap font-mono ${t === 0 ? "" : t === 1 ? "-translate-x-full" : "-translate-x-1/2"}`}
+            style={{ left: `${t * 100}%` }}
+          >
             {formatMs(Math.round(t * total))}
           </span>
         ))}
@@ -61,7 +65,17 @@ export function Waterfall({ timings }: { timings: TimingsView }) {
                       className={`absolute top-0.5 flex h-4 min-w-[3px] items-center rounded-[5px] bg-gradient-to-r ${color} shadow-[0_0_14px_-4px_currentColor]`}
                       style={{ left: `${(span.startMs / total) * 100}%`, width: `${Math.max((span.durationMs / total) * 100, 0.4)}%` }}
                     >
-                      <span className="absolute left-full ml-1.5 whitespace-nowrap font-mono text-[10px] text-foreground/80">{formatMs(span.durationMs)}</span>
+                      <span
+                        className={
+                          (span.startMs + span.durationMs) / total <= 0.8
+                            ? "absolute left-full ml-1.5 whitespace-nowrap font-mono text-[10px] text-foreground/80"
+                            : span.durationMs / total > 0.12
+                              ? "absolute right-1.5 whitespace-nowrap font-mono text-[10px] font-medium text-black/75"
+                              : "absolute right-full mr-1.5 whitespace-nowrap font-mono text-[10px] text-foreground/80"
+                        }
+                      >
+                        {formatMs(span.durationMs)}
+                      </span>
                     </span>
                   ) : (
                     <span className="absolute top-1 font-mono text-[10px] text-muted-foreground/70">skipped</span>
