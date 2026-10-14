@@ -237,3 +237,44 @@ describe("resolveProviders", () => {
     ).toThrow(/requires ANTHROPIC_API_KEY/);
   });
 });
+
+describe("offline answerer — stitched answers and follow-ups", () => {
+  const passages: SourcePassage[] = [
+    {
+      index: 1,
+      documentTitle: "API Reference",
+      headingPath: "API Reference > Delivery and retries",
+      pageStart: null,
+      pageEnd: null,
+      content:
+        "Failed deliveries are retried with exponential backoff. A delivery is attempted at most 8 times in total before the event moves to the dead-letter queue. Dead-lettered events can be replayed manually from the dashboard.",
+    },
+    {
+      index: 2,
+      documentTitle: "Security Policy",
+      headingPath: "Security Policy > Data retention",
+      pageStart: null,
+      pageEnd: null,
+      content: "If a delivery fails all 8 attempts, the event moves to the dead-letter queue and is kept there for 14 days.",
+    },
+  ];
+
+  it("leads with the best sentence, continues it, and adds support from another passage", async () => {
+    const { extractiveAnswer } = await import("@/server/providers/llm/offline");
+    const answer = extractiveAnswer("How many delivery attempts happen before an event moves to the dead-letter queue?", passages);
+    const [lead, support] = answer.split("\n\n");
+    expect(lead).toMatch(/^A delivery is attempted at most 8 times.*\[1\] Dead-lettered events can be replayed.*\[1\]$/);
+    expect(support).toContain("[2]");
+    expect(extractCitations(answer, 2)).toEqual({ cited: [1, 2], invalid: [] });
+  });
+
+  it("rewrites short or pronoun-led follow-ups using the previous question", async () => {
+    const { offlineStandaloneQuery } = await import("@/server/providers/llm/offline");
+    const history = [{ question: "How much does the Growth plan cost?", answer: "49 USD [1]." }];
+    expect(offlineStandaloneQuery("And the Scale plan?", history)).toBe("How much does the Growth plan cost? And the Scale plan?");
+    expect(offlineStandaloneQuery("How long is parental leave in weeks for adoptive parents?", history)).toBe(
+      "How long is parental leave in weeks for adoptive parents?",
+    );
+    expect(offlineStandaloneQuery("And the Scale plan?")).toBe("And the Scale plan?");
+  });
+});
