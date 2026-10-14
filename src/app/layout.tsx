@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif, Inter_Tight } from "next/font/google";
+import { Suspense } from "react";
 import { Backdrop } from "@/components/backdrop";
+import { DemoBanner } from "@/components/demo-banner";
 import { MotionProvider } from "@/components/motion-provider";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -27,6 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <MotionProvider>
             <Backdrop />
+            <Suspense fallback={null}>
+              <DemoBanner />
+            </Suspense>
             <SiteHeader />
             <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">{children}</main>
             <footer className="border-t border-border/60 py-8 text-center text-xs text-muted-foreground">

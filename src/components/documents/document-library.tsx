@@ -25,6 +25,7 @@ export interface DocumentItem {
   byteSize: number;
   pageCount: number | null;
   status: "queued" | "processing" | "ready" | "failed";
+  origin: "sample" | "upload";
   error: string | null;
   chunkCount: number;
   embeddingModel: string | null;
@@ -44,7 +45,16 @@ function realStep(doc: DocumentItem): number {
   return { parsing: 1, chunking: 2, embedding: 3, indexing: 3, done: 4 }[stage];
 }
 
-export function DocumentLibrary({ initialDocuments }: { initialDocuments: DocumentItem[] }) {
+export function DocumentLibrary({
+  initialDocuments,
+  demo = false,
+  maxUploadBytes,
+}: {
+  initialDocuments: DocumentItem[];
+  /** Public demo: samples are read-only, uploads are labelled and removed nightly. */
+  demo?: boolean;
+  maxUploadBytes?: number;
+}) {
   const [documents, setDocuments] = useState<DocumentItem[]>(initialDocuments);
   // Steps shown on screen advance one at a time so fast ingestions still read as a pipeline.
   const [shown, setShown] = useState<Record<string, number>>(() =>
@@ -86,6 +96,10 @@ export function DocumentLibrary({ initialDocuments }: { initialDocuments: Docume
     setNotice(null);
     try {
       for (const file of Array.from(files)) {
+        if (maxUploadBytes && file.size > maxUploadBytes) {
+          setNotice({ kind: "error", text: `${file.name} is larger than the ${formatBytes(maxUploadBytes)} limit.` });
+          continue;
+        }
         const form = new FormData();
         form.append("file", file);
         const res = await fetch("/api/documents", { method: "POST", body: form });
@@ -144,7 +158,9 @@ export function DocumentLibrary({ initialDocuments }: { initialDocuments: Docume
           {uploading ? "Uploading…" : dragging ? "Drop to ingest" : "Drop PDF or Markdown files, or click to browse"}
         </span>
         <span className="relative text-xs text-muted-foreground">
-          Parsed with page numbers · chunked along headings · embedded and indexed for hybrid search · identical files are deduplicated
+          {demo && maxUploadBytes
+            ? `Public demo · PDF or Markdown up to ${formatBytes(maxUploadBytes)} · uploads are visible to other visitors and removed nightly`
+            : "Parsed with page numbers · chunked along headings · embedded and indexed for hybrid search · identical files are deduplicated"}
         </span>
         <input
           ref={inputRef}
@@ -224,6 +240,11 @@ export function DocumentLibrary({ initialDocuments }: { initialDocuments: Docume
                   <IngestionSteps step={step} failed={doc.status === "failed" && settled} durations={settled ? durations : undefined} />
 
                   <div className="flex items-center gap-2 justify-self-end">
+                    {demo && doc.origin === "upload" ? (
+                      <Badge variant="default" title="Visitor upload, removed at the nightly reset">
+                        Demo upload
+                      </Badge>
+                    ) : null}
                     {settled && doc.status === "ready" ? (
                       <Badge variant="outline" className="font-mono">
                         {doc.chunkCount} chunks
@@ -235,9 +256,11 @@ export function DocumentLibrary({ initialDocuments }: { initialDocuments: Docume
                         <ArrowRight />
                       </Link>
                     </Button>
-                    <Button variant="ghost" size="icon-sm" aria-label={`Delete ${doc.title}`} onClick={() => void remove(doc.id)}>
-                      <Trash2 />
-                    </Button>
+                    {demo && doc.origin === "sample" ? null : (
+                      <Button variant="ghost" size="icon-sm" aria-label={`Delete ${doc.title}`} onClick={() => void remove(doc.id)}>
+                        <Trash2 />
+                      </Button>
+                    )}
                   </div>
                 </motion.li>
               );

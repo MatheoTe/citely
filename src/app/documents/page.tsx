@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { DocumentLibrary, type DocumentItem } from "@/components/documents/document-library";
 import { PageHeader } from "@/components/page-header";
+import { getEnv, maxUploadBytes } from "@/server/config/env";
 import { getDb } from "@/server/db/client";
 import { getProgress } from "@/server/ingest/progress";
 import { listDocuments } from "@/server/repositories";
@@ -18,7 +19,8 @@ async function Library() {
     createdAt: d.createdAt.toISOString(),
     progress: getProgress(d.id),
   }));
-  return <DocumentLibrary initialDocuments={initial} />;
+  const env = getEnv();
+  return <DocumentLibrary initialDocuments={initial} demo={env.DEMO_MODE} maxUploadBytes={maxUploadBytes(env)} />;
 }
 
 export default function DocumentsPage() {

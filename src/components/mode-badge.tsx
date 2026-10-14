@@ -31,7 +31,9 @@ export function ModeBadge({ mode }: { mode: ProviderModeView }) {
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           {live ? <Sparkles className="size-4 text-success" /> : <Cpu className="size-4 text-warning" />}
-          <p className="font-display font-semibold">{live ? "Live providers" : "Running without API keys"}</p>
+          <p className="font-display font-semibold">
+            {live ? "Live providers" : mode.demo ? "Public demo · offline on purpose" : "Running without API keys"}
+          </p>
         </div>
         <dl className="grid grid-cols-[88px_1fr] gap-y-1 text-xs">
           <dt className="text-muted-foreground">Answers</dt>
@@ -53,11 +55,18 @@ export function ModeBadge({ mode }: { mode: ProviderModeView }) {
               <li>Answers are extractive: verbatim sentences stitched from the top passages, no paraphrasing or reasoning.</li>
               <li>Embeddings are hashed n-grams — lexical, so paraphrases match less well.</li>
             </ul>
+            {mode.demo ? (
+              <p>
+                This demo makes no paid API calls. Clone the repo and add{" "}
+                <code className="rounded bg-muted px-1 font-mono text-foreground">ANTHROPIC_API_KEY</code> to switch on Claude.
+              </p>
+            ) : (
             <p>
               Add <code className="rounded bg-muted px-1 font-mono text-foreground">ANTHROPIC_API_KEY</code> (and optionally{" "}
               <code className="rounded bg-muted px-1 font-mono text-foreground">VOYAGE_API_KEY</code>) to <code className="font-mono">.env</code>{" "}
               and restart to switch on Claude.
             </p>
+            )}
           </div>
         )}
       </div>
