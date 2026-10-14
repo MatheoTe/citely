@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T13:37:34.605Z",
+  "generatedAt": "2026-10-14T13:51:35.689Z",
   "providers": {
     "llm": "offline (extractive)",
     "embeddings": "local-hash-v1@1024",
@@ -32,7 +32,7 @@
         "1000": 1
       },
       "p50Ms": 1,
-      "p95Ms": 1,
+      "p95Ms": 2,
       "misses": []
     },
     {
@@ -48,7 +48,7 @@
         "500": 0.9743589743589743,
         "1000": 1
       },
-      "p50Ms": 1,
+      "p50Ms": 2,
       "p95Ms": 3,
       "misses": [
         "pm-root-cause"
@@ -68,7 +68,7 @@
         "1000": 1
       },
       "p50Ms": 2,
-      "p95Ms": 2,
+      "p95Ms": 8,
       "misses": [
         "pm-root-cause"
       ]
@@ -82,7 +82,12 @@
       "falseAbstentionRate": 0.23076923076923078,
       "abstentionAccuracy": 0.5,
       "faithfulness": null,
-      "judgeCostUsd": 0
+      "judgeCostUsd": 0,
+      "judgeErrors": 0,
+      "answerCostUsd": 0,
+      "latencyP50Ms": 335,
+      "latencyP95Ms": 823,
+      "ttftP50Ms": 7
     },
     "rows": [
       {

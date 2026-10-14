@@ -20,6 +20,7 @@
 /eval/reports/*.json
 !/eval/reports/latest.json
 !/eval/reports/sweep-latest.json
+!/eval/reports/live-latest.json
 
 # misc
 .DS_Store

@@ -14,7 +14,7 @@ import path from "node:path";
 import { eq } from "drizzle-orm";
 import { getEnv } from "@/server/config/env";
 import { createDb, type DbHandle } from "@/server/db/client";
-import { chunks, documents } from "@/server/db/schema";
+import { chunks, documents, traces } from "@/server/db/schema";
 import { runMigrations } from "@/server/db/migrate";
 import { answerQuestion, toPassage } from "@/server/generation/answer";
 import { llmCostUsd } from "@/server/observability/pricing";
@@ -140,12 +140,25 @@ interface GenerationRow {
   answer: string;
 }
 
+/** Cost and latency of the answers themselves, read back from the traces the pipeline wrote. */
+async function servingStats(index: Index) {
+  const rows = await index.handle.db.select({ cost: traces.costUsd, total: traces.totalMs, timings: traces.timings }).from(traces);
+  const ttfts = rows.flatMap((r) => (r.timings.ttftMs === null ? [] : [r.timings.ttftMs]));
+  return {
+    answerCostUsd: rows.reduce((n, r) => n + (r.cost ?? 0), 0),
+    latencyP50Ms: Math.round(percentile(rows.map((r) => r.total), 50)),
+    latencyP95Ms: Math.round(percentile(rows.map((r) => r.total), 95)),
+    ttftP50Ms: Math.round(percentile(ttfts, 50)),
+  };
+}
+
 async function evalGeneration(index: Index, providers: Providers, questions: GoldenQuestion[]) {
   const filenames = new Map(
     (await index.handle.db.select({ id: documents.id, filename: documents.filename }).from(documents)).map((d) => [d.id, d.filename]),
   );
   const rows: GenerationRow[] = [];
   let judgeCost = 0;
+  let judgeErrors = 0;
 
   for (const q of questions) {
     const outcome = await answerQuestion({ db: index.handle.db, providers }, { question: q.question, k: GENERATION_K }, () => {});
@@ -157,13 +170,19 @@ async function evalGeneration(index: Index, providers: Providers, questions: Gol
 
     let faithfulness: number | null = null;
     if (providers.judge && q.answerable && !abstained) {
-      const verdict = await providers.judge.judge({
-        question: q.question,
-        answer: outcome.answer,
-        sources: outcome.sources.map(toPassage),
-      });
-      faithfulness = verdict.score;
-      judgeCost += llmCostUsd(verdict.usage) ?? 0;
+      try {
+        const verdict = await providers.judge.judge({
+          question: q.question,
+          answer: outcome.answer,
+          sources: outcome.sources.map(toPassage),
+        });
+        faithfulness = verdict.score;
+        judgeCost += llmCostUsd(verdict.usage) ?? 0;
+      } catch (err) {
+        // A judge failure must not sink the run: the row is reported without a faithfulness score.
+        judgeErrors++;
+        console.warn(`judge failed on ${q.id}: ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
 
     rows.push({
@@ -187,6 +206,8 @@ async function evalGeneration(index: Index, providers: Providers, questions: Gol
     abstentionAccuracy: mean(unanswerable.map((r) => (r.abstained ? 1 : 0))) ?? 0,
     faithfulness: mean(answerable.flatMap((r) => (r.faithfulness === null ? [] : [r.faithfulness]))),
     judgeCostUsd: judgeCost,
+    judgeErrors,
+    ...(await servingStats(index)),
   };
   return { summary, rows };
 }
@@ -208,7 +229,7 @@ async function writeReport(name: string, report: unknown) {
   await mkdir(dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   await writeFile(path.join(dir, `${name}-${stamp}.json`), `${JSON.stringify(report, null, 2)}\n`);
-  await writeFile(path.join(dir, `${name === "eval" ? "latest" : `${name}-latest`}.json`), `${JSON.stringify(report, null, 2)}\n`);
+  await writeFile(path.join(dir, `${name}-latest.json`.replace(/^eval-/, "")), `${JSON.stringify(report, null, 2)}\n`);
 }
 
 async function runSweep(providers: Providers, questions: GoldenQuestion[]) {
@@ -302,6 +323,10 @@ async function main() {
         [[pct(s.keyFactAccuracy), pct(s.citationPrecision), pct(s.answeredWithCitation), pct(s.falseAbstentionRate), pct(s.abstentionAccuracy), s.faithfulness === null ? "skipped" : pct(s.faithfulness)]],
       ),
     );
+    console.log(
+      `\nserving: answer cost $${s.answerCostUsd.toFixed(4)} total · latency p50 ${s.latencyP50Ms} ms / p95 ${s.latencyP95Ms} ms · first token p50 ${s.ttftP50Ms} ms` +
+        (providers.judge ? ` · judge cost $${s.judgeCostUsd.toFixed(4)}${s.judgeErrors ? ` (${s.judgeErrors} judge errors)` : ""}` : ""),
+    );
     const wrong = generation.rows.filter((r) => (r.answerable ? !r.keyFacts : !r.abstained));
     if (wrong.length) console.log(`\nIncorrect / unsupported: ${wrong.map((r) => r.id).join(", ")}`);
   }
@@ -315,8 +340,10 @@ async function main() {
     retrieval: retrieval.map(({ perQuestion, ...r }) => ({ ...r, misses: perQuestion.filter((q) => q.recallAt5 < 1).map((q) => q.id) })),
     generation,
   };
-  await writeReport("eval", report);
-  console.log("\nreport → eval/reports/latest.json");
+  // The offline run is the committed CI baseline (latest.json); live runs are kept apart.
+  const reportName = mode.offline ? "eval" : "live";
+  await writeReport(reportName, report);
+  console.log(`\nreport → eval/reports/${mode.offline ? "latest" : "live-latest"}.json`);
 
   if (CI) {
     const thresholds = JSON.parse(await readFile(path.resolve("eval/thresholds.json"), "utf8")) as {
