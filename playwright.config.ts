@@ -36,6 +36,9 @@ export default defineConfig({
       CITELY_EMBEDDINGS_PROVIDER: "local",
       CITELY_RERANKER: "none",
       CITELY_RATE_LIMIT_PER_MINUTE: "1000",
+      // `next start` also reads .env; explicit empty keys keep E2E offline regardless.
+      ANTHROPIC_API_KEY: "",
+      VOYAGE_API_KEY: "",
     },
   },
 });

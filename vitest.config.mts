@@ -3,6 +3,15 @@ import { defineConfig } from "vitest/config";
 
 const alias = { "@": path.resolve(import.meta.dirname, "src") };
 
+// Tests never call paid APIs, even when a developer's shell or .env has keys.
+const env = {
+  CITELY_LLM_PROVIDER: "offline",
+  CITELY_EMBEDDINGS_PROVIDER: "local",
+  CITELY_RERANKER: "none",
+  ANTHROPIC_API_KEY: "",
+  VOYAGE_API_KEY: "",
+};
+
 export default defineConfig({
   resolve: { alias },
   test: {
@@ -13,6 +22,7 @@ export default defineConfig({
           name: "unit",
           include: ["tests/unit/**/*.test.ts"],
           environment: "node",
+          env,
         },
       },
       {
@@ -21,6 +31,7 @@ export default defineConfig({
           name: "integration",
           include: ["tests/integration/**/*.test.ts"],
           environment: "node",
+          env,
           // Each file owns a database; run files serially to keep Postgres load predictable.
           fileParallelism: false,
           testTimeout: 60_000,
