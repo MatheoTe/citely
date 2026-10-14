@@ -5,7 +5,7 @@ import { askRequestSchema, listTracesQuerySchema, parseOrThrow } from "@/server/
 
 describe("TokenBucketRateLimiter", () => {
   it("allows a burst up to capacity, then refuses with a retry hint", () => {
-    let now = 0;
+    const now = 0;
     const limiter = new TokenBucketRateLimiter(3, 60_000, () => now);
     expect([1, 2, 3].map(() => limiter.consume("ip").allowed)).toEqual([true, true, true]);
     const denied = limiter.consume("ip");
@@ -25,7 +25,7 @@ describe("TokenBucketRateLimiter", () => {
   });
 
   it("isolates keys and evicts the least recently used beyond maxKeys", () => {
-    let now = 0;
+    const now = 0;
     const limiter = new TokenBucketRateLimiter(1, 60_000, () => now, 2);
     expect(limiter.consume("a").allowed).toBe(true);
     expect(limiter.consume("b").allowed).toBe(true);
