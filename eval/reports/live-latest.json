@@ -1,0 +1,482 @@
+{
+  "generatedAt": "2026-10-14T13:54:50.813Z",
+  "providers": {
+    "llm": "claude-sonnet-5-5",
+    "embeddings": "local-hash-v1@1024",
+    "reranker": null,
+    "offline": false,
+    "judge": "claude-haiku-4-5-20251001"
+  },
+  "corpus": {
+    "chunks": 54,
+    "avgChunkTokens": 96,
+    "chunkTokens": 256,
+    "overlapTokens": 48
+  },
+  "questions": {
+    "total": 43,
+    "unanswerable": 4
+  },
+  "retrieval": [
+    {
+      "config": "fts only",
+      "recall": {
+        "@1": 0.7435897435897436,
+        "@3": 0.9871794871794872,
+        "@5": 1,
+        "@10": 1
+      },
+      "mrr": 0.8589743589743589,
+      "budgeted": {
+        "500": 1,
+        "1000": 1
+      },
+      "p50Ms": 1,
+      "p95Ms": 3,
+      "misses": []
+    },
+    {
+      "config": "vector only",
+      "recall": {
+        "@1": 0.8333333333333334,
+        "@3": 0.9743589743589743,
+        "@5": 0.9743589743589743,
+        "@10": 1
+      },
+      "mrr": 0.9045584045584044,
+      "budgeted": {
+        "500": 0.9743589743589743,
+        "1000": 1
+      },
+      "p50Ms": 1,
+      "p95Ms": 3,
+      "misses": [
+        "pm-root-cause"
+      ]
+    },
+    {
+      "config": "hybrid (RRF)",
+      "recall": {
+        "@1": 0.7948717948717948,
+        "@3": 0.9615384615384616,
+        "@5": 0.9743589743589743,
+        "@10": 1
+      },
+      "mrr": 0.8846153846153848,
+      "budgeted": {
+        "500": 0.9743589743589743,
+        "1000": 1
+      },
+      "p50Ms": 2,
+      "p95Ms": 4,
+      "misses": [
+        "pm-root-cause"
+      ]
+    }
+  ],
+  "generation": {
+    "summary": {
+      "keyFactAccuracy": 0.9743589743589743,
+      "citationPrecision": 0.9210526315789473,
+      "answeredWithCitation": 0.9743589743589743,
+      "falseAbstentionRate": 0.02564102564102564,
+      "abstentionAccuracy": 1,
+      "faithfulness": 0.9824473684210526,
+      "judgeCostUsd": 0.05694799999999998,
+      "judgeErrors": 0,
+      "answerCostUsd": 0.17585300000000004,
+      "latencyP50Ms": 2227,
+      "latencyP95Ms": 3114,
+      "ttftP50Ms": 1632
+    },
+    "rows": [
+      {
+        "id": "api-rate-limit",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 0.5,
+        "faithfulness": 1,
+        "answer": "The API allows 600 requests per minute per workspace, with a burst allowance of 100 requests, tracked with a sliding window rather than a fixed calendar minute [1]. Customers on the Scale plan can request a higher limit [1, 4]."
+      },
+      {
+        "id": "api-throttle-code",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "When a client exceeds the rate limit, Relay answers with HTTP status 429 Too Many Requests and error code KR-1029 [1, 2]. The response also includes a Retry-After header giving the number of seconds to wait before retrying [2]."
+      },
+      {
+        "id": "api-kr-4291",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 0.5,
+        "faithfulness": 1,
+        "answer": "KR-4291 is returned with HTTP status 409 and means an idempotency key was reused with a different payload [1].\n\nThe documents don't explain this error beyond that table entry. Separately, the Publishing events section says that two requests sharing the same idempotency key within 24 hours store the event only once [4]."
+      },
+      {
+        "id": "api-max-attempts",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "A delivery is attempted at most 8 times in total. After the eighth failure, the event moves to the dead-letter queue [1]. There it is kept for 14 days and can be replayed manually from the dashboard or through POST /v3/deliveries/{id}/replay [1]."
+      },
+      {
+        "id": "api-retry-schedule",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Failed deliveries are retried with exponential backoff at 30 seconds, 2 minutes, 10 minutes, 1 hour, 6 hours and 24 hours after the previous attempt [1]. A delivery is attempted at most 8 times in total, and after the eighth failure the event moves to the dead-letter queue [1].\n\nThe documents do not explain how the 8 attempts map onto the six listed intervals, since the passage lists only six delays."
+      },
+      {
+        "id": "dead-letter-retention",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Dead-lettered events are kept for 14 days on every plan [1]. After the eighth failed delivery attempt, an event moves to the dead-letter queue, where it is kept for 14 days and can be replayed manually from the dashboard or through POST /v3/deliveries/{id}/replay [2]."
+      },
+      {
+        "id": "api-verify-signature",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "A receiver can check the Kestrel-Signature header that comes with every delivery. The signature is an HMAC-SHA256 of the timestamp and the raw request body, computed with the subscription's signing secret and encoded as hexadecimal [1].\n\nThe header looks like t=1717000000,v1=5257a869…. Receivers should also reject any request whose timestamp is more than 5 minutes away from their own clock, to prevent replay attacks [1]. While a signing secret is being rolled, Relay sends two v1 signatures, one per secret, for 48 hours [1].\n\nThe passages don't spell out the exact string that gets signed (for example, how the timestamp and body are joined)."
+      },
+      {
+        "id": "api-timestamp-tolerance",
+        "answerable": true,
+        "abstained": true,
+        "keyFacts": false,
+        "citationPrecision": null,
+        "faithfulness": null,
+        "answer": "I don't know based on the provided documents. The passages cover the 14 March 2025 delayed webhook delivery incident, but they say nothing about webhook timestamps or how old one can be before a receiver should reject it."
+      },
+      {
+        "id": "api-key-grace",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "After a rotation, the previous key stays valid for a grace period of 24 hours, so deployments can roll over without downtime [1]."
+      },
+      {
+        "id": "api-page-size",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "The maximum page size for list endpoints is 200 items, set through the `limit` query parameter; the default is 50. [1]"
+      },
+      {
+        "id": "api-v2-eol",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Version 2 of the API reaches end of life on 30 June 2026 [1]."
+      },
+      {
+        "id": "hb-pto",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Every employee receives 25 days of paid time off per calendar year, in addition to the public holidays of their country of residence [1]. Up to 5 unused days can be carried over into the next year, and carried-over days expire on 31 March [1]."
+      },
+      {
+        "id": "hb-carry-over",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Unused paid time off days can be carried over into the next year, up to a maximum of 5 days [1]. Carried-over days expire on 31 March [1]."
+      },
+      {
+        "id": "hb-core-hours",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Everyone is expected to be reachable during core hours, which are 13:00 to 16:00 UTC, Monday to Thursday [1]. Fridays have no core hours and no recurring meetings [1]."
+      },
+      {
+        "id": "hb-parental-leave",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Birth and adoptive parents receive 20 weeks of fully paid parental leave, regardless of gender [1]. The leave can be taken in up to three blocks within the first 18 months after the birth or adoption [1]. During the first month back, parents work a reduced schedule of 60% at full pay [1]."
+      },
+      {
+        "id": "hb-home-office",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "New employees receive a one-time home office stipend of 1,200 US dollars for a desk, a chair and other equipment [1]. There is also a recurring allowance of 50 US dollars per month that covers internet and co-working costs [1]."
+      },
+      {
+        "id": "hb-learning",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Every employee has an annual learning budget of 1,500 US dollars for books, courses and conferences [1]. Unused budget does not roll over, and conference travel counts against it unless you are speaking, in which case the company pays separately [1]."
+      },
+      {
+        "id": "hb-on-call-pay",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Each on-call week is compensated with a flat payment of 350 US dollars [2]. If you were paged outside your working hours more than twice, you also get a day off in lieu [2]."
+      },
+      {
+        "id": "hb-ack-page",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "The primary on-call engineer must acknowledge a page within 10 minutes. If it isn't acknowledged, it escalates to the secondary on-call engineer and then to the engineering manager [1]."
+      },
+      {
+        "id": "hb-laptop-refresh",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Laptops are refreshed every 3 years, or earlier if the hardware fails [1]."
+      },
+      {
+        "id": "pm-root-cause",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "The delays were caused by an expired TLS certificate on Heron, the internal message broker that the dispatch workers read from. The certificate expired at 09:12 UTC, and the workers rejected it, as designed, and stopped consuming from the EU partitions [6].\n\nThe certificate had been issued manually in 2024, outside the automated renewal system that manages every other internal certificate. Because it was not in the inventory, no expiry alert fired [6]. The US region was unaffected because its broker had already been migrated to automatically renewed certificates [6]."
+      },
+      {
+        "id": "pm-duration",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "The incident lasted 47 minutes, from 09:12 to 09:59 UTC on 14 March 2025 [1]. The longest individual delay for a delivered event was 52 minutes [1]."
+      },
+      {
+        "id": "pm-share-delayed",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Roughly 18% of deliveries in the EU region were queued but not dispatched during the incident window (09:12 to 09:59 UTC on 14 March 2025) [1]."
+      },
+      {
+        "id": "pm-detection",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 0.5,
+        "faithfulness": 1,
+        "answer": "Detection took nine minutes because the lag monitor only evaluates once per minute and requires five consecutive breaches before alerting [1]. As a result, the first alert fired at 09:21 UTC, nine minutes after the incident began, which missed the 5-minute detection target [1, 2]."
+      },
+      {
+        "id": "pm-actions",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "The postmortem listed five action items [1]:\n\n- Move every Heron certificate to the automated renewal system (Platform Reliability, due 31 March 2025) [1].\n- Add an alert 21 days before any certificate expires, inventoried or not, by scanning live endpoints (Security Engineering, due 15 April 2025) [1].\n- Reduce the dispatch lag alert to two consecutive breaches (Platform Reliability, due 21 March 2025) [1].\n- Add certificate expiry to the dispatch lag runbook (On-call guild, due 21 March 2025) [1].\n- Run a game day that simulates broker certificate expiry (Platform Reliability, due Q2 2025) [1].\n\nAll action items were completed by 30 May 2025 [1]."
+      },
+      {
+        "id": "sec-key-rotation",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Data encryption keys are rotated every 90 days. [1]"
+      },
+      {
+        "id": "sec-growth-payloads",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Event payloads are retained for 30 days on the Growth plan [1]."
+      },
+      {
+        "id": "sec-bounty",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "The largest bug bounty reward is 5,000 US dollars, paid for critical issues such as remote code execution or cross-workspace data access [1]."
+      },
+      {
+        "id": "sec-report-vuln",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Security researchers can report vulnerabilities to security@kestrel.example. Reports are acknowledged within 2 business days, and the aim is to fix critical vulnerabilities within 7 days [1]."
+      },
+      {
+        "id": "price-scale",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 0.5,
+        "faithfulness": 1,
+        "answer": "The Scale plan costs 399 US dollars per month. [1] Paying annually gives a 15% discount on the plan price. [4]"
+      },
+      {
+        "id": "price-growth-overage",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 0.5,
+        "faithfulness": 1,
+        "answer": "Overage on the Growth plan is billed at 0.40 US dollars per 10,000 additional events above the included 500,000 events per month [1]. The annual billing discount does not apply to overage, which is always billed monthly in arrears [5]."
+      },
+      {
+        "id": "price-annual",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "Paying annually gives a 15% discount on the plan price. [1] The discount does not apply to overage, which is always billed monthly in arrears. [1]"
+      },
+      {
+        "id": "price-sla-credit",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 0.5,
+        "faithfulness": 1,
+        "answer": "Scale customers receive a service credit of 10% of the monthly fee for each full 0.1% that availability falls below the 99.95% target, up to a maximum of 50% of the monthly fee [1]. Credits must be requested within 30 days of the end of the affected month [1].\n\nFor example, in the 14 March 2025 incident, EU-region availability fell to 99.89%, below the commitment, and Scale customers received an SLA credit [3]. The documents do not state the exact credit amount that was given for that incident."
+      },
+      {
+        "id": "price-free-quota",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "When a Starter (free) workspace reaches its monthly quota of 10,000 events, publishing is paused until the next billing cycle [2]. The free plan has no overage, so events are not billed beyond the quota [2]."
+      },
+      {
+        "id": "onb-join-rotation",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "New engineers join the on-call rotation after completing their onboarding shadow shifts [1]. They shadow two on-call shifts in weeks five and six [2]. After both shadow shifts they are added to the regular rotation, typically in their seventh week [2]. Their first real on-call week is always paired with an experienced secondary [2]."
+      },
+      {
+        "id": "onb-laptops",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 0.5,
+        "answer": "New engineers choose between a 14-inch MacBook Pro and a Framework Laptop 16 running Linux [1]. The laptop is shipped to your home address about two weeks before your start date [1]."
+      },
+      {
+        "id": "onb-kite",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "The internal deploy tool is called Kite [1]. It deploys to production through a staged rollout: one percent of traffic first, then ten percent, then everyone [1]. It also rolls back automatically if the error rate doubles [1]."
+      },
+      {
+        "id": "onb-security-training",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 1,
+        "answer": "The mandatory security training must be finished by the end of week three [2]. It takes about three hours, and passing it is a prerequisite for requesting production access [2]."
+      },
+      {
+        "id": "multi-sla-breach",
+        "answerable": true,
+        "abstained": false,
+        "keyFacts": true,
+        "citationPrecision": 1,
+        "faithfulness": 0.833,
+        "answer": "Yes. Monthly availability in the EU region fell to 99.89%, below the 99.95% commitment, and Scale plan customers received an SLA credit [2]. The Scale plan SLA promises 99.95% monthly availability for event ingestion and delivery dispatch [3].\n\nThe pricing document sets the credit at 10% of the monthly fee for each full 0.1% below the target, capped at 50% of the monthly fee [3]. The shortfall here is 0.06 percentage points (99.95% minus 99.89%), which is less than one full 0.1%. By that formula, no credit step would be reached, which conflicts with the postmortem's statement that a credit was given [2, 3]. The documents do not say how the credit was calculated or how much it was, so I can't state the exact amount."
+      },
+      {
+        "id": "no-graphql",
+        "answerable": false,
+        "abstained": true,
+        "keyFacts": null,
+        "citationPrecision": null,
+        "faithfulness": null,
+        "answer": "I don't know based on the provided documents. The passages describe only a public REST API (version 3) [1] and don't mention GraphQL."
+      },
+      {
+        "id": "no-ceo",
+        "answerable": false,
+        "abstained": true,
+        "keyFacts": null,
+        "citationPrecision": null,
+        "faithfulness": null,
+        "answer": "I don't know based on the provided documents. The passages don't name the CEO or describe the company's leadership."
+      },
+      {
+        "id": "no-enterprise",
+        "answerable": false,
+        "abstained": true,
+        "keyFacts": null,
+        "citationPrecision": null,
+        "faithfulness": null,
+        "answer": "I don't know based on the provided documents. The passages describe the Starter, Growth and Scale plans, but none of them mention an Enterprise plan or its price."
+      },
+      {
+        "id": "no-headcount",
+        "answerable": false,
+        "abstained": true,
+        "keyFacts": null,
+        "citationPrecision": null,
+        "faithfulness": null,
+        "answer": "I don't know based on the provided documents. The passages say Kestrel Labs has teammates in 14 countries [3], but they don't give a total number of employees."
+      }
+    ]
+  }
+}
