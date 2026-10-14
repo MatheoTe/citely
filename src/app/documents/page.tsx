@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { DocumentLibrary, type DocumentItem } from "@/components/documents/document-library";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
 import { getDb } from "@/server/db/client";
+import { getProgress } from "@/server/ingest/progress";
 import { listDocuments } from "@/server/repositories";
 
 export const metadata: Metadata = { title: "Documents" };
@@ -15,24 +16,25 @@ async function Library() {
   const initial: DocumentItem[] = rows.map((d) => ({
     ...d,
     createdAt: d.createdAt.toISOString(),
+    progress: getProgress(d.id),
   }));
   return <DocumentLibrary initialDocuments={initial} />;
 }
 
 export default function DocumentsPage() {
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Documents</h1>
-        <p className="text-sm text-muted-foreground">
-          Uploads are parsed, chunked along their headings, embedded and indexed for hybrid search in the background.
-        </p>
-      </div>
+    <div className="mx-auto max-w-5xl space-y-8">
+      <PageHeader
+        eyebrow="Ingestion"
+        title="Documents"
+        description="Every upload is content-hashed, parsed with page numbers, chunked along its headings, embedded and indexed for hybrid search — in the background, with live progress."
+      />
       <Suspense
         fallback={
           <div className="space-y-3">
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-40 w-full" />
+            <div className="surface h-44 animate-pulse" />
+            <div className="surface h-20 animate-pulse" />
+            <div className="surface h-20 animate-pulse" />
           </div>
         }
       >

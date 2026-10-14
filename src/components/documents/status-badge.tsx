@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 
 type Status = "queued" | "processing" | "ready" | "failed";
 
-export function StatusBadge({ status }: { status: Status }) {
+/** `data-status` is the durable state; `label` can show the in-flight sub-stage. */
+export function StatusBadge({ status, label }: { status: Status; label?: string }) {
   switch (status) {
     case "ready":
       return (
@@ -19,8 +20,8 @@ export function StatusBadge({ status }: { status: Status }) {
       );
     case "processing":
       return (
-        <Badge data-status="processing">
-          <Loader2 className="animate-spin" /> Processing
+        <Badge data-status="processing" className="capitalize">
+          <Loader2 className="animate-spin" /> {label ?? "Processing"}
         </Badge>
       );
     default:
