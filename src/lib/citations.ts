@@ -65,3 +65,58 @@ export function isAbstention(text: string): boolean {
   const normalized = text.trim().toLowerCase().replace(/[’`]/g, "'");
   return normalized.startsWith("i don't know") || normalized.startsWith("i do not know");
 }
+
+export interface CitationMarkdown {
+  /** Markdown where every valid marker became a link `[n](#cite-n-k)` (k = occurrence). */
+  markdown: string;
+  /** The claim each occurrence supports: the sentence the marker closes. */
+  claims: string[];
+}
+
+/** Last sentence of `text` (the claim a trailing citation marker refers to). */
+function trailingSentence(text: string): string {
+  const trimmed = text.replace(/\s+$/, "");
+  const lineStart = trimmed.lastIndexOf("\n") + 1;
+  const line = trimmed.slice(lineStart);
+  const body = line.replace(/[.!?]+$/, "");
+  const boundary = Math.max(body.lastIndexOf(". "), body.lastIndexOf("! "), body.lastIndexOf("? "));
+  return line.slice(boundary >= 0 ? boundary + 2 : 0).replace(/^[-*•\s]+/, "").trim();
+}
+
+/**
+ * Prepare a (possibly still streaming) answer for markdown rendering: valid
+ * citation markers become in-document links the renderer turns into pills,
+ * and each occurrence remembers the claim it supports for highlighting.
+ */
+export function toCitationMarkdown(text: string, sourceCount: number): CitationMarkdown {
+  const claims: string[] = [];
+  let markdown = "";
+  let textSoFar = "";
+  for (const segment of segmentAnswer(text, sourceCount)) {
+    if (segment.type === "text") {
+      markdown += segment.text;
+      textSoFar += segment.text;
+      continue;
+    }
+    const claim = trailingSentence(textSoFar);
+    markdown += segment.indices
+      .map((index) => {
+        claims.push(claim);
+        return `[${index}](#cite-${index}-${claims.length - 1})`;
+      })
+      .join("");
+  }
+  return { markdown, claims };
+}
+
+/** Plain-text version for the clipboard: markers kept, sources listed at the end. */
+export function answerForClipboard(
+  answer: string,
+  sources: { index: number; documentTitle: string; headingPath: string; pageStart: number | null }[],
+  cited: number[],
+): string {
+  const list = sources
+    .filter((s) => cited.includes(s.index))
+    .map((s) => `[${s.index}] ${s.documentTitle}${s.headingPath ? ` — ${s.headingPath.split(" > ").slice(1).join(" › ")}` : ""}${s.pageStart ? ` (p. ${s.pageStart})` : ""}`);
+  return list.length ? `${answer.trim()}\n\nSources:\n${list.join("\n")}` : answer.trim();
+}
