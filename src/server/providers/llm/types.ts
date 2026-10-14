@@ -1,3 +1,4 @@
+import type { HistoryTurn } from "@/lib/ask-events";
 import type { SourcePassage } from "../../generation/prompt";
 
 export interface LlmUsage {
@@ -11,6 +12,8 @@ export interface LlmUsage {
 export interface AnswerRequest {
   question: string;
   sources: SourcePassage[];
+  /** Earlier turns of the conversation, oldest first (for follow-up questions). */
+  history?: HistoryTurn[];
   signal?: AbortSignal;
 }
 
@@ -25,7 +28,8 @@ export interface AnswerResult {
 export interface LlmProvider {
   readonly name: "anthropic" | "offline";
   readonly answerModel: string;
-  rewriteQuery(question: string): Promise<{ query: string; usage: LlmUsage | null }>;
+  /** Turn the (possibly follow-up) question into a standalone search query. */
+  rewriteQuery(question: string, history?: HistoryTurn[]): Promise<{ query: string; usage: LlmUsage | null }>;
   streamAnswer(request: AnswerRequest, onDelta: (text: string) => void): Promise<AnswerResult>;
 }
 

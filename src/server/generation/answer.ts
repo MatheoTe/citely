@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { ABSTAIN_ANSWER, extractCitations, isAbstention } from "@/lib/citations";
-import type { AskEvent, SourceView } from "@/lib/ask-events";
+import type { AskEvent, HistoryTurn, PipelineStage, SourceView, StageStatus } from "@/lib/ask-events";
 import type { Db } from "../db/client";
 import { traces, type TraceCitation, type TraceTimings, type TraceUsageEntry } from "../db/schema";
 import { errorMessage, toErrorBody } from "../errors";
@@ -14,6 +14,8 @@ export interface AskInput {
   question: string;
   k: number;
   documentIds?: string[];
+  /** Earlier turns of the conversation (oldest first) for follow-up questions. */
+  history?: HistoryTurn[];
 }
 
 export interface AskDeps {
@@ -39,10 +41,16 @@ function toSourceView(chunk: RetrievedChunk, index: number): SourceView {
     chunkId: chunk.chunkId,
     documentId: chunk.documentId,
     documentTitle: chunk.documentTitle,
+    filename: chunk.filename,
     headingPath: chunk.headingPath,
     pageStart: chunk.pageStart,
     pageEnd: chunk.pageEnd,
     content: chunk.content,
+    ftsRank: chunk.ftsRank,
+    vectorRank: chunk.vectorRank,
+    vectorSimilarity: chunk.vectorSimilarity,
+    fusedScore: chunk.fusedScore,
+    rerankScore: chunk.rerankScore,
   };
 }
 
@@ -61,8 +69,10 @@ export function toPassage(source: SourceView): SourcePassage {
  * The query pipeline: rewrite → hybrid retrieve (→ rerank) → grounded,
  * streamed generation → citation validation → trace.
  *
- * Every stage is timed, every model call is costed, and the trace row is
- * written before the final `done` event so the UI can link to it.
+ * Every stage is announced as it starts and finishes (`stage` events drive
+ * the live pipeline view), timed with its offset from the start of the
+ * request, and every model call is costed. The trace row is written before
+ * the final `done` event so the UI can link to it.
  */
 export async function answerQuestion(
   deps: AskDeps,
@@ -86,26 +96,40 @@ export async function answerQuestion(
     ttftMs: null,
     generationMs: 0,
     totalMs: 0,
+    spans: [],
   };
   const usage: TraceUsageEntry[] = [];
+  const stageStarts = new Map<PipelineStage, number>();
   let rewrittenQuery: string | null = null;
   let retrieved: RetrievedChunk[] = [];
   let answer = "";
 
+  const stage = (name: PipelineStage, status: StageStatus, durationMs?: number, detail?: string) => {
+    if (status === "running") stageStarts.set(name, ms(t0));
+    if (status === "done") {
+      const duration = durationMs ?? 0;
+      const startMs = stageStarts.get(name) ?? Math.max(0, ms(t0) - duration);
+      timings.spans!.push({ stage: name, startMs, durationMs: duration });
+    }
+    emit({ type: "stage", stage: name, status, ...(durationMs !== undefined && { ms: durationMs }), ...(detail && { detail }) });
+  };
+
   emit({ type: "meta", traceId, mode });
 
   try {
+    stage("rewrite", "running");
     let start = performance.now();
-    const rewrite = await providers.llm.rewriteQuery(input.question);
+    const rewrite = await providers.llm.rewriteQuery(input.question, input.history);
     timings.rewriteMs = ms(start);
     rewrittenQuery = rewrite.query;
     if (rewrite.usage) usage.push(usageEntry("rewrite", rewrite.usage));
+    stage("rewrite", "done", timings.rewriteMs, rewrittenQuery);
 
     start = performance.now();
     const retrieval = await retrieve(
       { db, embeddings: providers.embeddings, reranker: providers.reranker },
       rewrittenQuery,
-      { k: input.k, documentIds: input.documentIds },
+      { k: input.k, documentIds: input.documentIds, onStage: (name, status, d) => stage(name, status, d) },
     );
     timings.retrievalMs = ms(start);
     Object.assign(timings, retrieval.timings);
@@ -137,6 +161,7 @@ export async function answerQuestion(
     emit({ type: "sources", sources });
 
     let refused = false;
+    stage("generate", "running");
     start = performance.now();
     if (sources.length === 0) {
       // Nothing retrieved: abstain without paying for a generation call.
@@ -144,7 +169,7 @@ export async function answerQuestion(
       emit({ type: "delta", text: answer });
     } else {
       const result = await providers.llm.streamAnswer(
-        { question: input.question, sources: sources.map(toPassage), signal },
+        { question: input.question, sources: sources.map(toPassage), history: input.history, signal },
         (text) => {
           timings.ttftMs ??= ms(t0);
           emit({ type: "delta", text });
@@ -155,6 +180,7 @@ export async function answerQuestion(
       if (result.usage) usage.push(usageEntry("answer", result.usage));
     }
     timings.generationMs = ms(start);
+    stage("generate", "done", timings.generationMs);
 
     const { cited, invalid } = extractCitations(answer, sources.length);
     const citations: TraceCitation[] = cited.map((index) => ({ index, chunkId: sources[index - 1].chunkId }));

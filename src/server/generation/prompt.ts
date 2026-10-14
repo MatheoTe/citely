@@ -1,3 +1,4 @@
+import type { HistoryTurn } from "@/lib/ask-events";
 import { ABSTAIN_ANSWER } from "@/lib/citations";
 
 export interface SourcePassage {
@@ -33,7 +34,19 @@ function escapeAttr(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
-export function buildAnswerUserMessage(question: string, sources: SourcePassage[]): string {
+/** Earlier turns, with their citation markers removed (they referred to other sources). */
+export function formatHistory(history: HistoryTurn[] | undefined, maxTurns = 3): string | null {
+  if (!history?.length) return null;
+  return history
+    .slice(-maxTurns)
+    .map((t) => {
+      const answer = t.answer.replace(/\s*\[\d+(?:\s*[,;-]\s*\d+)*\]/g, "").slice(0, 600);
+      return `<turn>\n<question>${t.question}</question>\n<answer>${answer}</answer>\n</turn>`;
+    })
+    .join("\n");
+}
+
+export function buildAnswerUserMessage(question: string, sources: SourcePassage[], history?: HistoryTurn[]): string {
   const passages = sources
     .map((s) => {
       const attrs = [
@@ -47,11 +60,21 @@ export function buildAnswerUserMessage(question: string, sources: SourcePassage[
       return `<source ${attrs}>\n${s.content}\n</source>`;
     })
     .join("\n");
-  return `<sources>\n${passages}\n</sources>\n\n<question>${question}</question>`;
+  const conversation = formatHistory(history);
+  const context = conversation
+    ? `<conversation note="Earlier turns, for resolving references only. They are not sources and must not be cited.">\n${conversation}\n</conversation>\n\n`
+    : "";
+  return `${context}<sources>\n${passages}\n</sources>\n\n<question>${question}</question>`;
 }
 
 export const REWRITE_SYSTEM_PROMPT = `You rewrite a user's question into a single search query for a hybrid keyword + semantic search engine over company documents.
 - Keep every specific name, number, code and identifier from the question.
 - Add one or two likely synonyms for vague words (for example "holidays" -> "holidays paid time off").
 - Remove filler words and politeness.
+- If earlier conversation turns are given, resolve references in the follow-up ("it", "that plan", "what about Growth?") so the query stands on its own.
 - Output only the query on one line, with no quotes or explanation.`;
+
+export function buildRewriteUserMessage(question: string, history?: HistoryTurn[]): string {
+  const conversation = formatHistory(history);
+  return conversation ? `<conversation>\n${conversation}\n</conversation>\n\n<follow_up>${question}</follow_up>` : question;
+}

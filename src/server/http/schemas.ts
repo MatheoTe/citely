@@ -10,6 +10,16 @@ export const askRequestSchema = z
       .max(1000, "Question is too long (max 1000 characters)"),
     k: z.number().int().min(1).max(20).optional(),
     documentIds: z.array(z.uuid()).max(50).optional(),
+    /** Earlier turns for follow-up questions; only the last few are used. */
+    history: z
+      .array(
+        z.object({
+          question: z.string().trim().min(1).max(1000),
+          answer: z.string().max(4000),
+        }),
+      )
+      .max(6)
+      .optional(),
   })
   .strict();
 

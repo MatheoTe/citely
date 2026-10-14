@@ -6,8 +6,10 @@ import {
   ANSWER_SYSTEM_PROMPT,
   REWRITE_SYSTEM_PROMPT,
   buildAnswerUserMessage,
+  buildRewriteUserMessage,
   type SourcePassage,
 } from "../../generation/prompt";
+import type { HistoryTurn } from "@/lib/ask-events";
 import type {
   AnswerRequest,
   AnswerResult,
@@ -68,13 +70,13 @@ export class AnthropicLlmProvider implements LlmProvider {
     this.client = options.client ?? new Anthropic({ apiKey: options.apiKey, maxRetries: 2, timeout: 60_000 });
   }
 
-  async rewriteQuery(question: string): Promise<{ query: string; usage: LlmUsage | null }> {
+  async rewriteQuery(question: string, history?: HistoryTurn[]): Promise<{ query: string; usage: LlmUsage | null }> {
     try {
       const res = await this.client.messages.create({
         model: this.options.fastModel,
         max_tokens: 200,
         system: REWRITE_SYSTEM_PROMPT,
-        messages: [{ role: "user", content: question }],
+        messages: [{ role: "user", content: buildRewriteUserMessage(question, history) }],
       });
       const text = res.content
         .flatMap((b) => (b.type === "text" ? [b.text] : []))
@@ -97,7 +99,7 @@ export class AnthropicLlmProvider implements LlmProvider {
           fallbacks: "default",
           output_config: { effort: this.options.effort },
           system: [{ type: "text", text: ANSWER_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-          messages: [{ role: "user", content: buildAnswerUserMessage(request.question, request.sources) }],
+          messages: [{ role: "user", content: buildAnswerUserMessage(request.question, request.sources, request.history) }],
         },
         { signal: request.signal },
       );

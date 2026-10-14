@@ -33,7 +33,12 @@ describe("answerQuestion (offline providers)", () => {
   it("streams sources, deltas and a cited answer, and persists a trace", async () => {
     const { outcome, events } = await ask("How long is parental leave?");
 
-    expect(events.map((e) => e.type)).toEqual(["meta", "sources", ...events.slice(2, -1).map(() => "delta"), "done"]);
+    // meta → stage events for rewrite/retrieval → sources → generate → deltas → done
+    const types = events.map((e) => e.type).filter((t) => t !== "stage");
+    expect(types).toEqual(["meta", "sources", ...types.slice(2, -1).map(() => "delta"), "done"]);
+    const stages = events.flatMap((e) => (e.type === "stage" && e.status !== "running" ? [`${e.stage}:${e.status}`] : []));
+    expect(stages).toEqual(["rewrite:done", "fts:done", "vector:done", "fuse:done", "rerank:skipped", "generate:done"]);
+    expect(events.findIndex((e) => e.type === "sources")).toBeLessThan(events.findIndex((e) => e.type === "delta"));
     const streamed = events.flatMap((e) => (e.type === "delta" ? [e.text] : [])).join("");
     expect(streamed).toBe(outcome.answer);
     expect(outcome.answerable).toBe(true);
@@ -55,6 +60,24 @@ describe("answerQuestion (offline providers)", () => {
     expect(trace.retrieval).toHaveLength(6);
     expect(trace.timings.totalMs).toBeGreaterThanOrEqual(trace.timings.retrievalMs);
     expect(trace.timings.ttftMs).not.toBeNull();
+    expect(trace.timings.spans?.map((s) => s.stage)).toEqual(["rewrite", "fts", "vector", "fuse", "generate"]);
+    expect(outcome.sources[0]).toMatchObject({ filename: "employee-handbook.md", fusedScore: expect.any(Number) });
+  });
+
+  it("resolves follow-up questions against the previous turn", async () => {
+    const events: AskEvent[] = [];
+    const outcome = await answerQuestion(
+      { db: handle.db, providers: offline },
+      {
+        question: "And what about the Scale plan?",
+        k: 6,
+        history: [{ question: "How much does the Growth plan cost per month?", answer: "49 US dollars per month [1]." }],
+      },
+      (e) => events.push(e),
+    );
+    const rewrite = events.find((e) => e.type === "stage" && e.stage === "rewrite" && e.status === "done");
+    expect(rewrite).toMatchObject({ detail: expect.stringContaining("Growth plan") });
+    expect(outcome.answer).toContain("399 US dollars");
   });
 
   it("abstains explicitly when the corpus does not contain the answer", async () => {

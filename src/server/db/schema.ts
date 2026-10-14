@@ -127,6 +127,8 @@ export interface TraceTimings {
   ttftMs: number | null;
   generationMs: number;
   totalMs: number;
+  /** Stage spans with start offsets (newer traces only; older ones are derived from durations). */
+  spans?: { stage: "rewrite" | "fts" | "vector" | "fuse" | "rerank" | "generate"; startMs: number; durationMs: number }[];
 }
 
 export interface TraceRetrievalEntry {

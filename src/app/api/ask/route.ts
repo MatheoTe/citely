@@ -31,7 +31,12 @@ export const POST = withErrors(async (request: Request) => {
       try {
         await answerQuestion(
           { db, providers },
-          { question: body.question, k: body.k ?? getEnv().CITELY_RETRIEVAL_K, documentIds: body.documentIds },
+          {
+            question: body.question,
+            k: body.k ?? getEnv().CITELY_RETRIEVAL_K,
+            documentIds: body.documentIds,
+            history: body.history,
+          },
           emit,
           request.signal,
         );

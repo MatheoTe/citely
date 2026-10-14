@@ -20,7 +20,11 @@ export interface RetrievalOptions {
   /** Apply the reranker (if one is configured) to the fused candidates. */
   rerank?: boolean;
   documentIds?: string[];
+  /** Progress callback for live pipeline visualisation (stage start / end with duration). */
+  onStage?: (stage: RetrievalStage, status: "running" | "done" | "skipped", ms?: number) => void;
 }
+
+export type RetrievalStage = "fts" | "vector" | "fuse" | "rerank";
 
 export interface RetrievedChunk {
   chunkId: string;
@@ -93,17 +97,27 @@ export async function retrieve(deps: RetrievalDeps, query: string, options: Retr
   const scope = options.documentIds?.length ? inArray(chunks.documentId, options.documentIds) : undefined;
   const timings = { embedMs: 0, ftsMs: 0, vectorMs: 0, fuseMs: 0, rerankMs: 0 };
   let embedTokens = 0;
+  const onStage = options.onStage ?? (() => {});
 
   const runFts = async () => {
-    if (mode === "vector") return [];
+    if (mode === "vector") {
+      onStage("fts", "skipped");
+      return [];
+    }
+    onStage("fts", "running");
     const start = performance.now();
     const rows = await lexicalSearch(db, query, candidates, scope);
     timings.ftsMs = since(start);
+    onStage("fts", "done", timings.ftsMs);
     return rows;
   };
 
   const runVector = async () => {
-    if (mode === "fts") return [];
+    if (mode === "fts") {
+      onStage("vector", "skipped");
+      return [];
+    }
+    onStage("vector", "running");
     let start = performance.now();
     const embedded = await embeddings.embedQuery(query);
     timings.embedMs = since(start);
@@ -111,11 +125,13 @@ export async function retrieve(deps: RetrievalDeps, query: string, options: Retr
     start = performance.now();
     const rows = await vectorSearch(db, embedded.vectors[0], embeddings.model, candidates, scope);
     timings.vectorMs = since(start);
+    onStage("vector", "done", timings.embedMs + timings.vectorMs);
     return rows;
   };
 
   const [ftsRows, vectorRows] = await Promise.all([runFts(), runVector()]);
 
+  onStage("fuse", "running");
   let start = performance.now();
   const fused = reciprocalRankFusion(
     [
@@ -125,10 +141,14 @@ export async function retrieve(deps: RetrievalDeps, query: string, options: Retr
     options.rrfK ?? 60,
   );
   timings.fuseMs = since(start);
+  onStage("fuse", "done", timings.fuseMs);
 
   const useReranker = options.rerank !== false && !!reranker;
   const pool = fused.slice(0, useReranker ? Math.min(candidates, 20) : options.k);
-  if (pool.length === 0) return { chunks: [], timings, embedTokens, rerankTokens: 0 };
+  if (pool.length === 0) {
+    onStage("rerank", "skipped");
+    return { chunks: [], timings, embedTokens, rerankTokens: 0 };
+  }
 
   const rows = await db
     .select({
@@ -169,6 +189,7 @@ export async function retrieve(deps: RetrievalDeps, query: string, options: Retr
 
   let rerankTokens = 0;
   if (useReranker && reranker) {
+    onStage("rerank", "running");
     start = performance.now();
     const reranked = await reranker.rerank(
       query,
@@ -178,6 +199,9 @@ export async function retrieve(deps: RetrievalDeps, query: string, options: Retr
     timings.rerankMs = since(start);
     rerankTokens = reranked.tokens;
     results = reranked.results.slice(0, options.k).map(({ index, score }) => ({ ...results[index], rerankScore: score }));
+    onStage("rerank", "done", timings.rerankMs);
+  } else {
+    onStage("rerank", "skipped");
   }
 
   return { chunks: results.slice(0, options.k), timings, embedTokens, rerankTokens };
