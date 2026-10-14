@@ -3,15 +3,17 @@ import type * as React from "react";
 import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
-  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap [&_svg]:size-3",
+  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium whitespace-nowrap backdrop-blur-sm [&_svg]:size-3",
   {
     variants: {
       variant: {
-        default: "border-transparent bg-accent text-accent-foreground",
-        outline: "text-muted-foreground",
-        success: "border-transparent bg-success/15 text-success",
-        warning: "border-transparent bg-warning/20 text-warning",
-        destructive: "border-transparent bg-destructive/15 text-destructive",
+        default: "border-primary/25 bg-primary/12 text-accent-foreground",
+        outline: "border-border bg-muted/40 text-muted-foreground",
+        success: "border-success/25 bg-success/12 text-success",
+        warning: "border-warning/30 bg-warning/12 text-warning",
+        destructive: "border-destructive/30 bg-destructive/12 text-destructive",
+        fts: "border-fts/30 bg-fts/12 text-fts",
+        vector: "border-vector/30 bg-vector/12 text-vector",
       },
     },
     defaultVariants: { variant: "default" },

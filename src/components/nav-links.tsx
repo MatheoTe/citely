@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "motion/react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +22,7 @@ export function StaticNavLinks() {
 
 function NavList({ pathname }: { pathname: string | null }) {
   return (
-    <nav className="flex items-center gap-1 text-sm">
+    <nav className="flex items-center gap-0.5 text-sm">
       {links.map((link) => {
         const active = pathname !== null && (link.href === "/" ? pathname === "/" : pathname.startsWith(link.href));
         return (
@@ -29,11 +30,18 @@ function NavList({ pathname }: { pathname: string | null }) {
             key={link.href}
             href={link.href}
             className={cn(
-              "rounded-md px-3 py-1.5 transition-colors hover:bg-muted",
-              active ? "bg-muted font-medium text-foreground" : "text-muted-foreground",
+              "relative rounded-full px-3.5 py-1.5 transition-colors",
+              active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {link.label}
+            {active && (
+              <motion.span
+                layoutId="nav-active"
+                className="absolute inset-0 rounded-full bg-muted shadow-[inset_0_1px_0_0_var(--surface-highlight),0_0_0_1px_var(--surface-border)]"
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+              />
+            )}
+            <span className="relative">{link.label}</span>
           </Link>
         );
       })}
