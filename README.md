@@ -1,6 +1,6 @@
 # Citely
 
-[![Live demo](https://img.shields.io/badge/Live%20demo-citely.vercel.app-7c5cff?style=for-the-badge&logo=vercel&logoColor=white)](https://citely.vercel.app)
+[![Live demo](https://img.shields.io/badge/Live%20demo-citely--matheote.vercel.app-7c5cff?style=for-the-badge&logo=vercel&logoColor=white)](https://citely-matheote.vercel.app)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/MatheoTe/citely)
 
 **Answers you can verify.** Citely is a retrieval-augmented generation (RAG) app: upload PDFs or Markdown, ask questions, and get answers grounded in your documents — every claim carries an inline citation that opens the exact chunk (and PDF page) it came from. When the documents don't contain the answer, Citely says so instead of guessing.
@@ -205,7 +205,7 @@ Metric definitions live in [`eval/metrics.ts`](eval/metrics.ts). Each run writes
 
 ## Live demo
 
-**[citely.vercel.app](https://citely.vercel.app)** runs the app in demo mode against the fictional sample corpus (a made-up webhook company, *Kestrel Relay*). Ask about pricing, retries or the incident postmortem and follow the citations.
+**[citely-matheote.vercel.app](https://citely-matheote.vercel.app)** runs the app in demo mode against the fictional sample corpus (a made-up webhook company, *Kestrel Relay*). Ask about pricing, retries or the incident postmortem and follow the citations.
 
 - **Offline on purpose** — extractive answers and hashed embeddings, so the public demo makes no paid API calls. The screenshots above show the same UI with Claude answering.
 - **Uploads** — PDF or Markdown up to 2 MB, labelled *Demo upload*, visible to other visitors. Sample documents can't be deleted.
