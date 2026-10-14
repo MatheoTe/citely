@@ -100,3 +100,28 @@ describe("estimateTokens", () => {
     expect(estimateTokens("a".repeat(400))).toBe(100);
   });
 });
+
+describe("uuidFromString", () => {
+  it("produces stable, well-formed UUIDs", async () => {
+    const { uuidFromString } = await import("@/server/ingest/text");
+    const id = uuidFromString("doc:0:hash");
+    expect(id).toBe(uuidFromString("doc:0:hash"));
+    expect(id).not.toBe(uuidFromString("doc:1:hash"));
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  });
+});
+
+describe("chunkBlocks without heading boundaries", () => {
+  it("treats the document as one stream and keeps headings as text", () => {
+    const blocks: Block[] = [
+      { kind: "heading", level: 2, text: "Retries", page: null },
+      { kind: "paragraph", text: "Short retry section.", page: null },
+      { kind: "heading", level: 2, text: "Signatures", page: null },
+      { kind: "paragraph", text: "Short signature section.", page: null },
+    ];
+    const chunks = chunkBlocks(blocks, { targetTokens: 500, overlapTokens: 0, respectHeadings: false });
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0].headingPath).toBe("");
+    expect(chunks[0].content).toBe("Retries\n\nShort retry section.\n\nSignatures\n\nShort signature section.");
+  });
+});

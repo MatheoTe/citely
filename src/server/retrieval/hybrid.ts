@@ -58,12 +58,14 @@ async function lexicalSearch(db: Db, query: string, limit: number, scope: SQL | 
   if (!tsQuery) return [];
   const q = sql`to_tsquery('english', ${tsQuery})`;
   const score = sql<number>`ts_rank_cd(${chunks.tsv}, ${q}, 32)`;
+  // ts_rank_cd ties are common for short queries; ts_rank (term frequency) breaks most of them.
+  const tieBreak = sql<number>`ts_rank(${chunks.tsv}, ${q})`;
   return db
     .select({ id: chunks.id, score })
     .from(chunks)
     .innerJoin(documents, eq(documents.id, chunks.documentId))
     .where(and(sql`${chunks.tsv} @@ ${q}`, eq(documents.status, "ready"), scope))
-    .orderBy(desc(score), asc(chunks.id))
+    .orderBy(desc(score), desc(tieBreak), asc(chunks.id))
     .limit(limit);
 }
 

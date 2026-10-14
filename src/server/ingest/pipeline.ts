@@ -5,7 +5,7 @@ import { IngestionError, errorMessage } from "../errors";
 import type { EmbeddingProvider } from "../providers/embeddings/types";
 import { chunkBlocks, embeddingInput } from "./chunker";
 import { detectSourceType, parseDocument, titleFromFilename, type SourceType } from "./parse";
-import { sha256 } from "./text";
+import { sha256, uuidFromString } from "./text";
 import type { ChunkOptions } from "./types";
 
 const PROCESSING_LEASE_MS = 10 * 60 * 1000;
@@ -134,6 +134,7 @@ export async function processDocument(deps: IngestDeps, documentId: string): Pro
     const { vectors } = await embedWithCache(db, embeddings, inputs);
 
     const rows = drafts.map((d, i) => ({
+      id: uuidFromString(`${claimed.contentHash}:${d.ordinal}:${inputs[i].hash}:${embeddings.model}`),
       documentId,
       ordinal: d.ordinal,
       content: d.content,

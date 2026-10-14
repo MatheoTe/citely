@@ -39,3 +39,16 @@ export function splitSentences(text: string): string[] {
   if (tail) parts.push(tail);
   return parts;
 }
+
+/**
+ * Name-based UUID (RFC 9562 v8 layout) derived from a sha256 digest. Chunk ids
+ * built this way are stable across re-ingestion and across environments, which
+ * makes rankings — including tie-breaks — reproducible.
+ */
+export function uuidFromString(input: string): string {
+  const hex = sha256(input).slice(0, 32).split("");
+  hex[12] = "8";
+  hex[16] = ((Number.parseInt(hex[16], 16) & 0x3) | 0x8).toString(16);
+  const h = hex.join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
+}
