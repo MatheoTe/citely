@@ -1,4 +1,4 @@
-import { after } from "next/server";
+import { after, connection } from "next/server";
 import { getEnv } from "@/server/config/env";
 import { getIngestDeps } from "@/server/context";
 import { PayloadTooLargeError, ValidationError } from "@/server/errors";
@@ -10,6 +10,7 @@ import { listDocuments } from "@/server/repositories";
 export const maxDuration = 60;
 
 export const GET = withErrors(async () => {
+  await connection(); // always read the live table, never a build-time snapshot
   const { db } = await getIngestDeps();
   return Response.json({ documents: await listDocuments(db) });
 });
