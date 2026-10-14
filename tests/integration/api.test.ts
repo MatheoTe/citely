@@ -5,9 +5,13 @@ import type { AskEvent } from "@/lib/ask-events";
 import type { DbHandle } from "@/server/db/client";
 import { CORPUS_DIR, createTestDb } from "./helpers";
 
-// `after()` needs a Next.js request scope; in tests, run the callback and keep its promise.
+// `after()` and `connection()` need a Next.js request scope. In tests, run
+// background work immediately (keeping its promise) and treat every call as dynamic.
 const background = vi.hoisted(() => [] as Promise<void>[]);
-vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => void background.push(fn()) }));
+vi.mock("next/server", () => ({
+  after: (fn: () => Promise<void>) => void background.push(fn()),
+  connection: async () => {},
+}));
 
 let handle: DbHandle;
 
