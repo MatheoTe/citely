@@ -1,0 +1,158 @@
+{
+  "generatedAt": "2026-10-14T12:26:14.629Z",
+  "embeddings": "local-hash-v1@1024",
+  "results": [
+    {
+      "strategy": "heading-aware",
+      "chunkTokens": 128,
+      "overlapTokens": 24,
+      "chunks": 66,
+      "avgChunkTokens": 80,
+      "contextTokensAtK6": 480,
+      "recall": {
+        "@1": 0.8076923076923077,
+        "@3": 0.9358974358974359,
+        "@5": 0.9487179487179487,
+        "@10": 1
+      },
+      "mrr": 0.8874643874643875,
+      "budgeted": {
+        "500": 0.9487179487179487,
+        "1000": 1
+      }
+    },
+    {
+      "strategy": "heading-aware",
+      "chunkTokens": 256,
+      "overlapTokens": 48,
+      "chunks": 54,
+      "avgChunkTokens": 96,
+      "contextTokensAtK6": 576,
+      "recall": {
+        "@1": 0.7948717948717948,
+        "@3": 0.9615384615384616,
+        "@5": 0.9743589743589743,
+        "@10": 1
+      },
+      "mrr": 0.8846153846153848,
+      "budgeted": {
+        "500": 0.9743589743589743,
+        "1000": 1
+      }
+    },
+    {
+      "strategy": "heading-aware",
+      "chunkTokens": 512,
+      "overlapTokens": 96,
+      "chunks": 54,
+      "avgChunkTokens": 96,
+      "contextTokensAtK6": 576,
+      "recall": {
+        "@1": 0.7948717948717948,
+        "@3": 0.9615384615384616,
+        "@5": 0.9743589743589743,
+        "@10": 1
+      },
+      "mrr": 0.8846153846153848,
+      "budgeted": {
+        "500": 0.9743589743589743,
+        "1000": 1
+      }
+    },
+    {
+      "strategy": "heading-aware",
+      "chunkTokens": 1024,
+      "overlapTokens": 192,
+      "chunks": 54,
+      "avgChunkTokens": 96,
+      "contextTokensAtK6": 576,
+      "recall": {
+        "@1": 0.7948717948717948,
+        "@3": 0.9615384615384616,
+        "@5": 0.9743589743589743,
+        "@10": 1
+      },
+      "mrr": 0.8846153846153848,
+      "budgeted": {
+        "500": 0.9743589743589743,
+        "1000": 1
+      }
+    },
+    {
+      "strategy": "fixed window",
+      "chunkTokens": 128,
+      "overlapTokens": 24,
+      "chunks": 63,
+      "avgChunkTokens": 95,
+      "contextTokensAtK6": 570,
+      "recall": {
+        "@1": 0.782051282051282,
+        "@3": 0.9487179487179487,
+        "@5": 0.9743589743589743,
+        "@10": 1
+      },
+      "mrr": 0.8728632478632478,
+      "budgeted": {
+        "500": 0.9743589743589743,
+        "1000": 1
+      }
+    },
+    {
+      "strategy": "fixed window",
+      "chunkTokens": 256,
+      "overlapTokens": 48,
+      "chunks": 29,
+      "avgChunkTokens": 210,
+      "contextTokensAtK6": 1260,
+      "recall": {
+        "@1": 0.9102564102564102,
+        "@3": 1,
+        "@5": 1,
+        "@10": 1
+      },
+      "mrr": 0.9529914529914529,
+      "budgeted": {
+        "500": 0.9358974358974359,
+        "1000": 1
+      }
+    },
+    {
+      "strategy": "fixed window",
+      "chunkTokens": 512,
+      "overlapTokens": 96,
+      "chunks": 14,
+      "avgChunkTokens": 439,
+      "contextTokensAtK6": 2634,
+      "recall": {
+        "@1": 0.8589743589743589,
+        "@3": 1,
+        "@5": 1,
+        "@10": 1
+      },
+      "mrr": 0.9358974358974359,
+      "budgeted": {
+        "500": 0.8589743589743589,
+        "1000": 1
+      }
+    },
+    {
+      "strategy": "fixed window",
+      "chunkTokens": 1024,
+      "overlapTokens": 192,
+      "chunks": 8,
+      "avgChunkTokens": 726,
+      "contextTokensAtK6": 4356,
+      "recall": {
+        "@1": 0.8846153846153846,
+        "@3": 1,
+        "@5": 1,
+        "@10": 1
+      },
+      "mrr": 0.9487179487179487,
+      "budgeted": {
+        "500": 0.8846153846153846,
+        "1000": 0.8846153846153846
+      }
+    }
+  ]
+}

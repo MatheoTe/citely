@@ -1,0 +1,8 @@
+{
+  "$comment": "Minimums enforced by `npm run eval:ci` (offline providers, deterministic). Set just below the current baseline in eval/reports/latest.json; raise them when the baseline improves.",
+  "hybridRecallAt5": 0.95,
+  "hybridMrr": 0.85,
+  "keyFactAccuracy": 0.65,
+  "citationPrecision": 0.85,
+  "abstentionAccuracy": 0.5
+}

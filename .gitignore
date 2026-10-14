@@ -19,6 +19,7 @@
 # eval scratch output (the committed baseline lives in eval/reports/latest.json)
 /eval/reports/*.json
 !/eval/reports/latest.json
+!/eval/reports/sweep-latest.json
 
 # misc
 .DS_Store
