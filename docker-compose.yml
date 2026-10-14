@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: citely-postgres
+    environment:
+      POSTGRES_USER: citely
+      POSTGRES_PASSWORD: citely
+      POSTGRES_DB: citely
+    ports:
+      - "5432:5432"
+    volumes:
+      - citely-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U citely -d citely"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  citely-pgdata:
