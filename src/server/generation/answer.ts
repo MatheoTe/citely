@@ -248,7 +248,7 @@ export async function answerQuestion(
         costUsd: sumCost(usage),
         totalMs: timings.totalMs,
       })
-      .catch((traceErr) => console.error("[citely] failed to persist error trace", traceErr));
+      .catch((traceErr) => console.error("[citevia] failed to persist error trace", traceErr));
     emit({ type: "error", error: toErrorBody(err).body.error });
     throw err;
   }

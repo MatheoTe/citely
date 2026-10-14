@@ -4,7 +4,7 @@ import { z } from "zod";
  * Runtime configuration, validated once and cached.
  *
  * Every provider has an "auto" mode: if the matching API key is present the
- * real provider is used, otherwise Citely falls back to a deterministic local
+ * real provider is used, otherwise Citevia falls back to a deterministic local
  * implementation. That is what lets the app, the test suite and CI run with no
  * secrets at all.
  */

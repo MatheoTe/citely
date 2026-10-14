@@ -114,7 +114,7 @@ export function toErrorBody(err: unknown): { status: number; body: ErrorBody; he
 
 export function toErrorResponse(err: unknown): Response {
   const { status, body, headers } = toErrorBody(err);
-  if (status >= 500) console.error("[citely]", err);
+  if (status >= 500) console.error("[citevia]", err);
   return Response.json(body, { status, headers });
 }
 

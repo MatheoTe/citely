@@ -152,8 +152,8 @@ function Hero({ onSubmit, stats }: { onSubmit: (q: string) => boolean; stats?: R
         transition={{ duration: 0.7, delay: 0.12, ease }}
         className="mt-6 max-w-xl text-pretty text-[15.5px] leading-relaxed text-muted-foreground"
       >
-        Citely finds the passages that matter with hybrid search and answers only from them. Every claim links to the exact
-        chunk and page it came from — and when the documents don&apos;t say, neither does Citely.
+        Citevia finds the passages that matter with hybrid search and answers only from them. Every claim links to the exact
+        chunk and page it came from — and when the documents don&apos;t say, neither does Citevia.
       </motion.p>
 
       <motion.div

@@ -29,7 +29,7 @@ export function SiteHeader() {
       <div className="mx-auto flex h-15 max-w-6xl items-center gap-5 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
           <LogoMark />
-          <span className="font-display text-[17px] font-semibold tracking-tight">Citely</span>
+          <span className="font-display text-[17px] font-semibold tracking-tight">Citevia</span>
         </Link>
         <Suspense fallback={<StaticNavLinks />}>
           <NavLinks />

@@ -15,7 +15,7 @@ export interface SourcePassage {
  * Frozen system prompt. It never contains per-request data, so it forms a
  * stable prefix that the API can cache across requests.
  */
-export const ANSWER_SYSTEM_PROMPT = `You are Citely, a question-answering assistant that answers strictly from a set of numbered source passages retrieved from the user's documents.
+export const ANSWER_SYSTEM_PROMPT = `You are Citevia, a question-answering assistant that answers strictly from a set of numbered source passages retrieved from the user's documents.
 
 Rules:
 1. Use only the information inside the <sources> block. Do not use prior knowledge, even if you are confident it is true.

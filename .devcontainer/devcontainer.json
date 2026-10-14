@@ -1,10 +1,10 @@
 {
-  "name": "Citely (offline demo)",
+  "name": "Citevia (offline demo)",
   "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
   "hostRequirements": { "cpus": 2, "memory": "4gb" },
   // Zero secrets: embedded Postgres (PGlite + pgvector) and offline providers.
   "containerEnv": {
-    "DATABASE_URL": "pglite://./.data/citely",
+    "DATABASE_URL": "pglite://./.data/citevia",
     "DEMO_MODE": "1",
     "CITELY_LLM_PROVIDER": "offline",
     "CITELY_EMBEDDINGS_PROVIDER": "local",
@@ -17,7 +17,7 @@
   },
   "forwardPorts": [3000],
   "portsAttributes": {
-    "3000": { "label": "Citely", "onAutoForward": "openPreview" }
+    "3000": { "label": "Citevia", "onAutoForward": "openPreview" }
   },
   "customizations": {
     "codespaces": { "openFiles": ["README.md"] },

@@ -2,7 +2,7 @@ import { ArrowUpRight } from "lucide-react";
 import { connection } from "next/server";
 import { getEnv } from "@/server/config/env";
 
-export const REPO_URL = "https://github.com/MatheoTe/citely";
+export const REPO_URL = "https://github.com/MatheoTe/citevia";
 
 /** Thin strip above the header, only in the public demo (DEMO_MODE=1). */
 export async function DemoBanner() {

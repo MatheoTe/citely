@@ -1,5 +1,5 @@
 /**
- * Citely evaluation harness.
+ * Citevia evaluation harness.
  *
  *   npm run eval            retrieval + generation with the configured providers
  *   npm run eval -- --retrieval-only
@@ -270,7 +270,7 @@ async function main() {
   const mode = describeProviders(providers);
   const questions = await loadGoldenSet();
   console.log(
-    `Citely eval — ${questions.length} questions (${questions.filter((q) => !q.answerable).length} unanswerable)\n` +
+    `Citevia eval — ${questions.length} questions (${questions.filter((q) => !q.answerable).length} unanswerable)\n` +
       `providers: llm=${mode.llm} · embeddings=${mode.embeddings} · reranker=${mode.reranker ?? "none"} · judge=${providers.judge?.model ?? "skipped (no ANTHROPIC_API_KEY)"}`,
   );
 

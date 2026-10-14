@@ -1,9 +1,9 @@
-# Citely
+# Citevia
 
-[![Live demo](https://img.shields.io/badge/Live%20demo-citely--matheote.vercel.app-7c5cff?style=for-the-badge&logo=vercel&logoColor=white)](https://citely-matheote.vercel.app)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/MatheoTe/citely)
+[![Live demo](https://img.shields.io/badge/Live%20demo-citevia.vercel.app-7c5cff?style=for-the-badge&logo=vercel&logoColor=white)](https://citevia.vercel.app)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/MatheoTe/citevia)
 
-**Answers you can verify.** Citely is a retrieval-augmented generation (RAG) app: upload PDFs or Markdown, ask questions, and get answers grounded in your documents — every claim carries an inline citation that opens the exact chunk (and PDF page) it came from. When the documents don't contain the answer, Citely says so instead of guessing.
+**Answers you can verify.** Citevia is a retrieval-augmented generation (RAG) app: upload PDFs or Markdown, ask questions, and get answers grounded in your documents — every claim carries an inline citation that opens the exact chunk (and PDF page) it came from. When the documents don't contain the answer, Citevia says so instead of guessing.
 
 It is built like a production service rather than a notebook demo: an idempotent ingestion pipeline, hybrid search inside Postgres, streamed generation with validated citations, per-request traces with cost, rate limiting, typed errors, and an evaluation harness that gates CI.
 
@@ -22,7 +22,7 @@ It is built like a production service rather than a notebook demo: an idempotent
 > 4. Ask something the document doesn't cover → *"I don't know based on the provided documents."*
 > 5. Open **Traces** and expand the request: latency waterfall, retrieval ranks, tokens and cost.
 >
-> Save it as `docs/demo.gif` and replace this note with `![Citely demo](docs/demo.gif)`.
+> Save it as `docs/demo.gif` and replace this note with `![Citevia demo](docs/demo.gif)`.
 
 ## Contents
 
@@ -205,14 +205,14 @@ Metric definitions live in [`eval/metrics.ts`](eval/metrics.ts). Each run writes
 
 ## Live demo
 
-**[citely-matheote.vercel.app](https://citely-matheote.vercel.app)** runs the app in demo mode against the fictional sample corpus (a made-up webhook company, *Kestrel Relay*). Ask about pricing, retries or the incident postmortem and follow the citations.
+**[citevia.vercel.app](https://citevia.vercel.app)** runs the app in demo mode against the fictional sample corpus (a made-up webhook company, *Kestrel Relay*). Ask about pricing, retries or the incident postmortem and follow the citations.
 
 - **Offline on purpose** — extractive answers and hashed embeddings, so the public demo makes no paid API calls. The screenshots above show the same UI with Claude answering.
 - **Uploads** — PDF or Markdown up to 2 MB, labelled *Demo upload*, visible to other visitors. Sample documents can't be deleted.
 - **Resets nightly** — a Vercel Cron call to `/api/demo/reset` drops visitor uploads and traces and re-seeds the corpus.
 - **Rate limits** — `/api/ask` and uploads are limited per IP with the in-memory token bucket. On serverless each warm instance keeps its own buckets, so the limit is per instance, not global; a shared store (Upstash/Redis) behind the same `RateLimiter` interface would make it exact.
 
-**Or run it yourself in one click:** [Open in Codespaces](https://codespaces.new/MatheoTe/citely) — no secrets needed. The dev container (Node 22) uses embedded PGlite, runs migrations and the seed on create, and starts `npm run dev` in demo mode on port 3000.
+**Or run it yourself in one click:** [Open in Codespaces](https://codespaces.new/MatheoTe/citevia) — no secrets needed. The dev container (Node 22) uses embedded PGlite, runs migrations and the seed on create, and starts `npm run dev` in demo mode on port 3000.
 
 <details>
 <summary>Deploying your own demo on Vercel</summary>
@@ -253,7 +253,7 @@ npm run dev                       # http://localhost:3000
 
 ```bash
 # .env
-DATABASE_URL=pglite://./.data/citely
+DATABASE_URL=pglite://./.data/citevia
 ```
 
 **Real providers.** Add `ANTHROPIC_API_KEY` and/or `VOYAGE_API_KEY` to `.env`. In `auto` mode each key independently switches its provider on; the header badge shows the active mode. After changing the embedding provider, re-index with `npm run ingest:pending -- --reindex`.

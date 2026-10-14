@@ -184,7 +184,7 @@ export async function processDocument(deps: IngestDeps, documentId: string): Pro
       .set({ status: "failed", error: errorMessage(err).slice(0, 500), updatedAt: new Date() })
       .where(eq(documents.id, documentId))
       .returning();
-    if (!(err instanceof IngestionError)) console.error(`[citely] ingestion of ${documentId} failed`, err);
+    if (!(err instanceof IngestionError)) console.error(`[citevia] ingestion of ${documentId} failed`, err);
     return failed;
   }
 }

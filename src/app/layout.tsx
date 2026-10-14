@@ -14,7 +14,7 @@ const display = Inter_Tight({ variable: "--font-display", subsets: ["latin"], we
 const serif = Instrument_Serif({ variable: "--font-serif", subsets: ["latin"], weight: "400", style: ["normal", "italic"] });
 
 export const metadata: Metadata = {
-  title: { default: "Citely — answers you can verify", template: "%s · Citely" },
+  title: { default: "Citevia — answers you can verify", template: "%s · Citevia" },
   description: "Ask questions about your documents and get answers grounded in them, with citations to the exact passage.",
 };
 
@@ -35,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <SiteHeader />
             <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">{children}</main>
             <footer className="border-t border-border/60 py-8 text-center text-xs text-muted-foreground">
-              <span className="font-display font-medium text-foreground/80">Citely</span> · hybrid retrieval, grounded
+              <span className="font-display font-medium text-foreground/80">Citevia</span> · hybrid retrieval, grounded
               generation, measured with evals
             </footer>
           </MotionProvider>
