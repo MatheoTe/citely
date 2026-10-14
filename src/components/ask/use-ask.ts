@@ -1,7 +1,15 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import type { AskEvent, SourceView, TimingsView } from "@/lib/ask-events";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { AskEvent, HistoryTurn, PipelineStage, SourceView, StageStatus, TimingsView } from "@/lib/ask-events";
+
+export interface StageState {
+  status: StageStatus | "idle";
+  ms?: number;
+  detail?: string;
+}
+
+export type StageMap = Record<PipelineStage, StageState>;
 
 export interface Turn {
   id: string;
@@ -15,42 +23,57 @@ export interface Turn {
   timings: TimingsView | null;
   costUsd: number | null;
   error: string | null;
+  stages: StageMap;
+  startedAt: number;
 }
 
-/** Reads the NDJSON event stream of POST /api/ask and folds it into conversation turns. */
+export const PIPELINE: PipelineStage[] = ["rewrite", "fts", "vector", "fuse", "rerank", "generate"];
+
+const idleStages = (): StageMap =>
+  Object.fromEntries(PIPELINE.map((s) => [s, { status: "idle" }])) as StageMap;
+
+const blankTurn = (id: string, question: string): Turn => ({
+  id,
+  question,
+  status: "streaming",
+  answer: "",
+  sources: [],
+  citedIndices: [],
+  answerable: null,
+  traceId: null,
+  timings: null,
+  costUsd: null,
+  error: null,
+  stages: idleStages(),
+  startedAt: Date.now(),
+});
+
+/** Conversation state driven by the NDJSON event stream of POST /api/ask. */
 export function useAsk() {
   const [turns, setTurns] = useState<Turn[]>([]);
+  const turnsRef = useRef<Turn[]>([]);
+  useEffect(() => {
+    turnsRef.current = turns;
+  }, [turns]);
   const abortRef = useRef<AbortController | null>(null);
 
   const update = (id: string, patch: (t: Turn) => Partial<Turn>) =>
     setTurns((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch(t) } : t)));
 
-  const ask = useCallback(async (question: string) => {
+  const run = useCallback(async (id: string, question: string, history: HistoryTurn[]) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
-    const id = crypto.randomUUID();
-    setTurns((prev) => [
-      ...prev,
-      {
-        id,
-        question,
-        status: "streaming",
-        answer: "",
-        sources: [],
-        citedIndices: [],
-        answerable: null,
-        traceId: null,
-        timings: null,
-        costUsd: null,
-        error: null,
-      },
-    ]);
 
     const apply = (event: AskEvent) => {
       switch (event.type) {
         case "meta":
           update(id, () => ({ traceId: event.traceId }));
+          break;
+        case "stage":
+          update(id, (t) => ({
+            stages: { ...t.stages, [event.stage]: { status: event.status, ms: event.ms, detail: event.detail ?? t.stages[event.stage].detail } },
+          }));
           break;
         case "sources":
           update(id, () => ({ sources: event.sources }));
@@ -78,7 +101,7 @@ export function useAsk() {
       const res = await fetch("/api/ask", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, ...(history.length && { history }) }),
         signal: controller.signal,
       });
       if (!res.ok || !res.body) {
@@ -104,5 +127,38 @@ export function useAsk() {
     }
   }, []);
 
-  return { turns, ask, busy: turns.at(-1)?.status === "streaming" };
+  const historyBefore = (index: number): HistoryTurn[] =>
+    turnsRef.current
+      .slice(0, index)
+      .filter((t) => t.status === "done")
+      .slice(-3)
+      .map((t) => ({ question: t.question, answer: t.answer.slice(0, 4000) }));
+
+  const ask = useCallback(
+    (question: string) => {
+      const id = crypto.randomUUID();
+      const history = historyBefore(turnsRef.current.length);
+      setTurns((prev) => [...prev, blankTurn(id, question)]);
+      void run(id, question, history);
+    },
+    [run],
+  );
+
+  const regenerate = useCallback(
+    (id: string) => {
+      const index = turnsRef.current.findIndex((t) => t.id === id);
+      if (index < 0) return;
+      const question = turnsRef.current[index].question;
+      setTurns((prev) => prev.map((t) => (t.id === id ? blankTurn(id, question) : t)));
+      void run(id, question, historyBefore(index));
+    },
+    [run],
+  );
+
+  const reset = useCallback(() => {
+    abortRef.current?.abort();
+    setTurns([]);
+  }, []);
+
+  return { turns, ask, regenerate, reset, busy: turns.some((t) => t.status === "streaming") };
 }
