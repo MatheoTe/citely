@@ -1,5 +1,8 @@
 # Citely
 
+[![Live demo](https://img.shields.io/badge/Live%20demo-citely.vercel.app-7c5cff?style=for-the-badge&logo=vercel&logoColor=white)](https://citely.vercel.app)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/MatheoTe/citely)
+
 **Answers you can verify.** Citely is a retrieval-augmented generation (RAG) app: upload PDFs or Markdown, ask questions, and get answers grounded in your documents — every claim carries an inline citation that opens the exact chunk (and PDF page) it came from. When the documents don't contain the answer, Citely says so instead of guessing.
 
 It is built like a production service rather than a notebook demo: an idempotent ingestion pipeline, hybrid search inside Postgres, streamed generation with validated citations, per-request traces with cost, rate limiting, typed errors, and an evaluation harness that gates CI.
@@ -27,6 +30,7 @@ It is built like a production service rather than a notebook demo: an idempotent
 - [Architecture](#architecture)
 - [Design decisions & trade-offs](#design-decisions--trade-offs)
 - [Evaluation](#evaluation)
+- [Live demo](#live-demo)
 - [Running locally](#running-locally)
 - [Testing](#testing)
 - [Project structure](#project-structure)
@@ -199,6 +203,39 @@ What these numbers do and don't say:
 
 Metric definitions live in [`eval/metrics.ts`](eval/metrics.ts). Each run writes a JSON report with per-question rows to `eval/reports/`; the committed baseline is [`eval/reports/latest.json`](eval/reports/latest.json). CI fails below the minimums in [`eval/thresholds.json`](eval/thresholds.json).
 
+## Live demo
+
+**[citely.vercel.app](https://citely.vercel.app)** runs the app in demo mode against the fictional sample corpus (a made-up webhook company, *Kestrel Relay*). Ask about pricing, retries or the incident postmortem and follow the citations.
+
+- **Offline on purpose** — extractive answers and hashed embeddings, so the public demo makes no paid API calls. The screenshots above show the same UI with Claude answering.
+- **Uploads** — PDF or Markdown up to 2 MB, labelled *Demo upload*, visible to other visitors. Sample documents can't be deleted.
+- **Resets nightly** — a Vercel Cron call to `/api/demo/reset` drops visitor uploads and traces and re-seeds the corpus.
+- **Rate limits** — `/api/ask` and uploads are limited per IP with the in-memory token bucket. On serverless each warm instance keeps its own buckets, so the limit is per instance, not global; a shared store (Upstash/Redis) behind the same `RateLimiter` interface would make it exact.
+
+**Or run it yourself in one click:** [Open in Codespaces](https://codespaces.new/MatheoTe/citely) — no secrets needed. The dev container (Node 22) uses embedded PGlite, runs migrations and the seed on create, and starts `npm run dev` in demo mode on port 3000.
+
+<details>
+<summary>Deploying your own demo on Vercel</summary>
+
+1. Create a Postgres database with pgvector (Neon works; `CREATE EXTENSION vector` runs in the first migration).
+2. Import the repo in Vercel. `vercel.json` sets the build command to `npm run vercel-build` (migrate → seed → `next build`) and schedules the nightly reset.
+3. Set the environment variables:
+
+| Variable | Value |
+| --- | --- |
+| `DATABASE_URL` | pooled connection string (Neon: the `-pooler` host, `?sslmode=require`) |
+| `DATABASE_URL_UNPOOLED` | direct connection string, used only by migrations |
+| `DEMO_MODE` | `1` |
+| `DEMO_RESET_TOKEN` | long random string — `POST /api/demo/reset` with header `x-demo-reset-token` |
+| `CRON_SECRET` | long random string — Vercel Cron sends it as `Authorization: Bearer …` |
+| `CITELY_RATE_LIMIT_PER_MINUTE` | optional, e.g. `10` |
+| `DEMO_MAX_UPLOAD_MB` · `DEMO_MAX_UPLOADS` · `DEMO_UPLOADS_PER_HOUR` | optional: `2` · `30` · `10` |
+| `DEMO_ALLOW_LIVE` | optional: `1` lets configured API keys switch on Claude/Voyage in demo mode |
+
+Ingestion runs after the upload response (`after()`, which Vercel keeps alive within the route's `maxDuration` of 60 s); with the 2 MB cap and local embeddings it takes a few seconds. Live ingestion progress is kept in memory, so on multi-instance deployments the list may jump straight from *queued* to *ready* — the status itself always comes from the database.
+
+</details>
+
 ## Running locally
 
 Requirements: Node.js ≥ 22 and, optionally, Docker.
@@ -232,6 +269,7 @@ DATABASE_URL=pglite://./.data/citely
 | `CITELY_RETRIEVAL_K` | `6` | passages sent to the LLM |
 | `CITELY_RATE_LIMIT_PER_MINUTE` | `20` | per-client limit on `/api/ask` |
 | `CITELY_MAX_UPLOAD_MB` | `10` | upload size limit |
+| `DEMO_MODE` | off | public demo: forced offline providers, 2 MB uploads, read-only samples, `/api/demo/reset` — see [Live demo](#live-demo) |
 
 ### API
 
@@ -243,16 +281,17 @@ DATABASE_URL=pglite://./.data/citely
 | `GET /api/chunks/:id` | one chunk with its document |
 | `GET /api/traces?limit=` | recent traces |
 | `GET /api/health` | database connectivity and active providers |
+| `POST /api/demo/reset` | demo mode only: wipe uploads and traces, re-seed (`x-demo-reset-token` header; `GET` with `Bearer $CRON_SECRET` for Vercel Cron) |
 
-Errors always look like `{ "error": { "code": "VALIDATION_FAILED", "message": "…", "details": [...] } }`, with the matching status (400, 404, 413, 415, 429 + `Retry-After`, 502).
+Errors always look like `{ "error": { "code": "VALIDATION_FAILED", "message": "…", "details": [...] } }`, with the matching status (400, 401, 403, 404, 413, 415, 429 + `Retry-After`, 502).
 
 ## Testing
 
 ```bash
 npm run typecheck          # next typegen + tsc --noEmit
 npm run lint
-npm run test:unit          # 81 tests: chunker, parsers, RRF, tsquery, citations + highlighting, providers, rate limiter, waterfall, eval metrics…
-npm run test:integration   # 24 tests: ingestion + progress, hybrid retrieval, answer pipeline + follow-ups, HTTP routes
+npm run test:unit          # 90 tests: chunker, parsers, RRF, tsquery, citations + highlighting, providers, rate limiter, waterfall, eval metrics, demo guards…
+npm run test:integration   # 30 tests: ingestion + progress, hybrid retrieval, answer pipeline + follow-ups, HTTP routes, demo reset
 npm run eval:ci            # offline eval + thresholds
 npm run build && npm run test:e2e   # Playwright: upload → live pipeline → citation preview → source panel → follow-up → document → waterfall
 ```
@@ -275,6 +314,7 @@ src/
     ingest/               parsers (PDF, Markdown) → chunker → idempotent pipeline
     retrieval/            tsquery builder, RRF, hybrid retrieve()
     generation/           prompts and the answer pipeline (rewrite → retrieve → stream → cite → trace)
+    demo/                 sample-corpus seeding, demo reset, reset-token check
     providers/            Voyage / local embeddings, Voyage reranker, Claude / offline LLM, judge
     observability/        pricing table for cost estimates
     http/                 request schemas, rate limiter, error-mapping wrapper
