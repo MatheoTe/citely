@@ -1,0 +1,26 @@
+{
+  "name": "Citely (offline demo)",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm",
+  "hostRequirements": { "cpus": 2, "memory": "4gb" },
+  // Zero secrets: embedded Postgres (PGlite + pgvector) and offline providers.
+  "containerEnv": {
+    "DATABASE_URL": "pglite://./.data/citely",
+    "DEMO_MODE": "1",
+    "CITELY_LLM_PROVIDER": "offline",
+    "CITELY_EMBEDDINGS_PROVIDER": "local",
+    "CITELY_RERANKER": "none",
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "postCreateCommand": "npm ci && npm run db:migrate && npm run seed",
+  "postAttachCommand": {
+    "dev": "npm run dev -- --port 3000"
+  },
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "Citely", "onAutoForward": "openPreview" }
+  },
+  "customizations": {
+    "codespaces": { "openFiles": ["README.md"] },
+    "vscode": { "extensions": ["dbaeumer.vscode-eslint", "bradlc.vscode-tailwindcss"] }
+  }
+}
